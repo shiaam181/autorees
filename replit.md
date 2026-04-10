@@ -76,6 +76,14 @@ Background worker starts automatically on server boot (5-minute intervals):
 - `GEMINI_API_KEY` — Google Gemini API key (for AI metadata generation)
 - `NEXT_PUBLIC_CREATE_APP_URL` — App base URL (Replit dev domain)
 
+## Deployment
+- **Target:** Autoscale
+- **Build:** `react-router build` + copies `src/app/api/` to `build/server/src/app/api/` (needed for dynamic API route registration at runtime)
+- **Run:** `bun build/server/index.js` (uses bun adapter via `react-router-hono-server/bun`)
+- **Port:** 5000 (single port required for Autoscale)
+- **LD_LIBRARY_PATH:** Must include gcc lib path for `argon2` native module
+- **SSR build target:** `ssr.target: 'node'` and `build.target: 'esnext'` in vite.config.ts to support top-level await
+
 ## Key Notes
 - `libstdc++.so.6` must be available via `LD_LIBRARY_PATH` for the `argon2` native module
 - Port changed from 4000 to 5000 to comply with Replit webview requirement
@@ -83,6 +91,8 @@ Background worker starts automatically on server boot (5-minute intervals):
 - Google OAuth client must be type "Web application" with correct redirect URI
 - Replit dev domain changes on each deployment — update redirect URI accordingly
 - Custom entry.client.tsx uses createRoot (not hydrateRoot) to avoid SSR mismatches
+- Server adapter: `react-router-hono-server/bun` (switched from `/node` for bun runtime compatibility)
+- `@auth/create` path alias resolved via tsconfig.json paths for production runtime imports
 
 ## Security & Dependency Overrides
 Both web and mobile `package.json` files include extensive `overrides` sections to pin transitive dependencies to patched versions (addressing CVEs for packages like picomatch, node-forge, minimatch, undici, tar, etc.). Key direct dependency updates:

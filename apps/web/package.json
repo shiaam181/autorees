@@ -4,8 +4,8 @@
         "type": "module",
         "scripts": {
                 "dev": "react-router dev",
-                "build": "react-router build",
-                "start": "node build/server/index.js",
+                "build": "react-router build && mkdir -p build/server/src/app && cp -r src/app/api build/server/src/app/api",
+                "start": "bun build/server/index.js",
                 "typecheck": "react-router typegen && tsc --noEmit"
         },
         "dependencies": {
