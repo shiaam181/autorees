@@ -228,6 +228,53 @@ export default function SettingsPage() {
                   label="Auto-Publish to YouTube"
                   description="Automatically upload videos with high-confidence AI metadata to YouTube Shorts. Use with caution."
                 />
+
+                <div className="flex items-center justify-between p-4 bg-white/5 rounded-2xl">
+                  <div className="flex-1 mr-4">
+                    <p className="font-bold">Videos Per Day</p>
+                    <p className="text-xs text-gray-500 mt-0.5">Maximum number of videos to scan and upload per day. Already uploaded videos won't reappear.</p>
+                  </div>
+                  <select
+                    value={localSettings.daily_upload_limit ?? 5}
+                    onChange={(e) => update("daily_upload_limit", parseInt(e.target.value))}
+                    className="bg-[#2a2a2a] border border-white/10 rounded-xl px-4 py-2 text-white outline-none"
+                  >
+                    <option value={1}>1 video/day</option>
+                    <option value={2}>2 videos/day</option>
+                    <option value={3}>3 videos/day</option>
+                    <option value={5}>5 videos/day</option>
+                    <option value={10}>10 videos/day</option>
+                    <option value={15}>15 videos/day</option>
+                    <option value={20}>20 videos/day</option>
+                    <option value={50}>50 videos/day</option>
+                  </select>
+                </div>
+
+                <div className="flex items-center justify-between p-4 bg-white/5 rounded-2xl">
+                  <div className="flex-1 mr-4">
+                    <p className="font-bold flex items-center gap-2">
+                      <Clock size={16} className="text-gray-400" />
+                      Gap Between Uploads
+                    </p>
+                    <p className="text-xs text-gray-500 mt-0.5">Wait this long between uploading each video to YouTube.</p>
+                  </div>
+                  <select
+                    value={localSettings.upload_interval_hours ?? 2}
+                    onChange={(e) => update("upload_interval_hours", parseFloat(e.target.value))}
+                    className="bg-[#2a2a2a] border border-white/10 rounded-xl px-4 py-2 text-white outline-none"
+                  >
+                    <option value={0.5}>30 minutes</option>
+                    <option value={1}>1 hour</option>
+                    <option value={1.5}>1.5 hours</option>
+                    <option value={2}>2 hours</option>
+                    <option value={3}>3 hours</option>
+                    <option value={4}>4 hours</option>
+                    <option value={6}>6 hours</option>
+                    <option value={8}>8 hours</option>
+                    <option value={12}>12 hours</option>
+                    <option value={24}>24 hours</option>
+                  </select>
+                </div>
               </div>
             </div>
           )}

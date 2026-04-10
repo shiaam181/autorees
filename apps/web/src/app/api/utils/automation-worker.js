@@ -52,9 +52,20 @@ async function scanAllFolders() {
       }
 
       const [settings] = await sql`
-        SELECT review_required FROM user_settings WHERE user_id = ${source.user_id} LIMIT 1
+        SELECT review_required, daily_upload_limit FROM user_settings WHERE user_id = ${source.user_id} LIMIT 1
       `;
       const reviewRequired = settings?.review_required ?? true;
+      const dailyLimit = settings?.daily_upload_limit ?? 5;
+
+      const [todayCount] = await sql`
+        SELECT COUNT(*)::int as cnt FROM videos
+        WHERE user_id = ${source.user_id}
+          AND detected_at >= CURRENT_DATE
+      `;
+      const remainingSlots = Math.max(0, dailyLimit - (todayCount?.cnt || 0));
+      if (remainingSlots <= 0) {
+        continue;
+      }
 
       const driveResponse = await fetch(
         `https://www.googleapis.com/drive/v3/files?q='${source.folder_id}'+in+parents+and+mimeType+contains+'video/'&fields=files(id,name,size,mimeType,videoMediaMetadata,createdTime)&pageSize=100`,
@@ -68,6 +79,8 @@ async function scanAllFolders() {
       let detectedCount = 0;
 
       for (const file of files) {
+        if (detectedCount >= remainingSlots) break;
+
         const videoMeta = file.videoMediaMetadata || {};
         const width = videoMeta.width || 0;
         const height = videoMeta.height || 0;
@@ -112,7 +125,7 @@ async function scanAllFolders() {
       }
 
       await sql`UPDATE drive_sources SET last_scanned_at = CURRENT_TIMESTAMP WHERE id = ${source.id}`;
-      if (detectedCount > 0) console.log(`[AutoWorker] Scanned folder ${source.folder_name || source.folder_id}: ${detectedCount} new videos`);
+      if (detectedCount > 0) console.log(`[AutoWorker] Scanned folder ${source.folder_name || source.folder_id}: ${detectedCount} new videos (daily: ${(todayCount?.cnt || 0) + detectedCount}/${dailyLimit})`);
     } catch (err) {
       console.error(`[AutoWorker] Scan error for source ${source.id}:`, err.message);
     }
@@ -208,9 +221,40 @@ async function publishReadyVideos() {
 
   for (const video of videos) {
     const [settings] = await sql`
-      SELECT auto_publish FROM user_settings WHERE user_id = ${video.user_id} LIMIT 1
+      SELECT auto_publish, daily_upload_limit, upload_interval_hours FROM user_settings WHERE user_id = ${video.user_id} LIMIT 1
     `;
     if (!settings?.auto_publish) continue;
+
+    const dailyLimit = settings?.daily_upload_limit ?? 5;
+    const intervalHours = parseFloat(settings?.upload_interval_hours ?? 2);
+
+    const [publishedToday] = await sql`
+      SELECT COUNT(*)::int as cnt FROM videos
+      WHERE user_id = ${video.user_id}
+        AND status = 'published'
+        AND published_at >= CURRENT_DATE
+    `;
+    if ((publishedToday?.cnt || 0) >= dailyLimit) {
+      console.log(`[AutoWorker] Daily publish limit (${dailyLimit}) reached for user ${video.user_id}`);
+      continue;
+    }
+
+    const [lastPublished] = await sql`
+      SELECT published_at FROM videos
+      WHERE user_id = ${video.user_id}
+        AND status = 'published'
+        AND published_at IS NOT NULL
+      ORDER BY published_at DESC
+      LIMIT 1
+    `;
+    if (lastPublished?.published_at) {
+      const hoursSinceLast = (Date.now() - new Date(lastPublished.published_at).getTime()) / (1000 * 60 * 60);
+      if (hoursSinceLast < intervalHours) {
+        const waitMins = Math.round((intervalHours - hoursSinceLast) * 60);
+        console.log(`[AutoWorker] Upload interval not reached. Next upload in ~${waitMins} min`);
+        continue;
+      }
+    }
 
     if (!video.meta_title || !video.meta_description) continue;
 

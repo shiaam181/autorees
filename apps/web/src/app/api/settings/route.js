@@ -48,6 +48,8 @@ export async function PATCH(request) {
       auto_metadata = COALESCE(${body.auto_metadata ?? null}, auto_metadata),
       auto_publish = COALESCE(${body.auto_publish ?? null}, auto_publish),
       scan_interval_minutes = COALESCE(${body.scan_interval_minutes ?? null}, scan_interval_minutes),
+      daily_upload_limit = COALESCE(${body.daily_upload_limit ?? null}, daily_upload_limit),
+      upload_interval_hours = COALESCE(${body.upload_interval_hours ?? null}, upload_interval_hours),
       default_privacy = COALESCE(${body.default_privacy ?? null}, default_privacy),
       default_category = COALESCE(${body.default_category ?? null}, default_category),
       default_language = COALESCE(${body.default_language ?? null}, default_language),

@@ -20,13 +20,21 @@ export async function POST(req, { params }) {
     if (!source)
       return Response.json({ error: "Source not found" }, { status: 404 });
 
-    // Get user settings for review requirements
     const [settings] = await sql`
-      SELECT review_required FROM user_settings
+      SELECT review_required, daily_upload_limit FROM user_settings
       WHERE user_id = ${session.user.id}
       LIMIT 1
     `;
     const reviewRequired = settings?.review_required ?? true;
+    const dailyLimit = settings?.daily_upload_limit ?? 5;
+
+    const [todayCount] = await sql`
+      SELECT COUNT(*)::int as cnt FROM videos
+      WHERE user_id = ${session.user.id}
+        AND detected_at >= CURRENT_DATE
+        AND status NOT IN ('published', 'failed')
+    `;
+    const remainingSlots = Math.max(0, dailyLimit - (todayCount?.cnt || 0));
 
     // Get Google Drive access token
     let accessToken;
@@ -73,8 +81,19 @@ export async function POST(req, { params }) {
     let duplicateCount = 0;
     const results = [];
 
-    // Process each video file
+    if (remainingSlots <= 0) {
+      return Response.json({
+        message: `Daily limit of ${dailyLimit} videos reached. No new videos scanned today.`,
+        count: 0,
+        duplicates: 0,
+        total: files.length,
+        daily_limit: dailyLimit,
+        videos: [],
+      });
+    }
+
     for (const file of files) {
+      if (detectedCount >= remainingSlots) break;
       const videoMeta = file.videoMediaMetadata || {};
       const width = videoMeta.width || 0;
       const height = videoMeta.height || 0;
@@ -159,10 +178,12 @@ export async function POST(req, { params }) {
     await sql`UPDATE drive_sources SET last_scanned_at = CURRENT_TIMESTAMP WHERE id = ${id}`;
 
     return Response.json({
-      message: `Detected ${detectedCount} new videos (${duplicateCount} duplicates skipped)`,
+      message: `Detected ${detectedCount} new videos (${duplicateCount} duplicates skipped). Daily limit: ${detectedCount + (todayCount?.cnt || 0)}/${dailyLimit}`,
       count: detectedCount,
       duplicates: duplicateCount,
       total: files.length,
+      daily_limit: dailyLimit,
+      daily_used: detectedCount + (todayCount?.cnt || 0),
       videos: results,
     });
   } catch (err) {
