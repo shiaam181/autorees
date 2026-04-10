@@ -298,6 +298,12 @@ app.use('/api/auth/*', async (c, next) => {
 });
 app.route(API_BASENAME, api);
 
+import('../src/app/api/utils/automation-worker.js')
+  .then(({ startAutomationWorker }) => {
+    startAutomationWorker(5 * 60 * 1000);
+  })
+  .catch((err) => console.error('[AutoWorker] Failed to start:', err.message));
+
 export default await createHonoServer({
   app,
   defaultLogger: false,

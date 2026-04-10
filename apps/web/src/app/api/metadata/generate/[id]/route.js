@@ -64,23 +64,28 @@ Respond ONLY in JSON format (no markdown code blocks):
   "notes": "reasoning for recommendations"
 }`;
 
+    const geminiApiKey = process.env.GEMINI_API_KEY;
+    if (!geminiApiKey) throw new Error("GEMINI_API_KEY not configured");
+
     const aiResponse = await fetch(
-      `${process.env.NEXT_PUBLIC_CREATE_APP_URL}/integrations/google-gemini-2-5-pro/`,
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${geminiApiKey}`,
       {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          messages: [{ role: "user", content: prompt }],
+          contents: [{ parts: [{ text: prompt }] }],
+          generationConfig: { temperature: 0.7 },
         }),
       },
     );
 
-    if (!aiResponse.ok)
-      throw new Error(`AI Generation failed with status ${aiResponse.status}`);
+    if (!aiResponse.ok) {
+      const errText = await aiResponse.text();
+      throw new Error(`Gemini API failed (${aiResponse.status}): ${errText}`);
+    }
     const aiData = await aiResponse.json();
 
-    // Parse JSON response (strip markdown if present)
-    let content = aiData.choices[0].message.content.trim();
+    let content = (aiData.candidates?.[0]?.content?.parts?.[0]?.text || "").trim();
     const jsonMatch = content.match(/\{[\s\S]*\}/);
     if (jsonMatch) {
       content = jsonMatch[0];
