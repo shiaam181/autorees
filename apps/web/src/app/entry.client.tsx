@@ -1,9 +1,8 @@
 import { startTransition } from 'react';
-import { hydrateRoot } from 'react-dom/client';
+import { createRoot } from 'react-dom/client';
 import { HydratedRouter } from 'react-router/dom';
 
 startTransition(() => {
-  hydrateRoot(document, <HydratedRouter />, {
-    onRecoverableError() {},
-  });
+  const root = createRoot(document);
+  root.render(<HydratedRouter />);
 });
