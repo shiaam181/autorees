@@ -11,6 +11,7 @@ import {
   Menu,
   X,
   Key,
+  Upload,
 } from "lucide-react";
 import useUser from "@/utils/useUser";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
@@ -55,6 +56,7 @@ export default function RootLayout({ children }) {
   const navItems = [
     { href: "/", icon: LayoutDashboard, label: "Dashboard" },
     { href: "/drive", icon: FolderSearch, label: "Drive Folders" },
+    { href: "/pipeline", icon: Upload, label: "Upload Pipeline" },
     { href: "/queue", icon: ListVideo, label: "Review Queue" },
     { href: "/history", icon: History, label: "Upload History" },
     { href: "/accounts", icon: Youtube, label: "Connected Accounts" },
