@@ -83,3 +83,9 @@ Background worker starts automatically on server boot (5-minute intervals):
 - Google OAuth client must be type "Web application" with correct redirect URI
 - Replit dev domain changes on each deployment — update redirect URI accordingly
 - Custom entry.client.tsx uses createRoot (not hydrateRoot) to avoid SSR mismatches
+
+## Security & Dependency Overrides
+Both web and mobile `package.json` files include extensive `overrides` sections to pin transitive dependencies to patched versions (addressing CVEs for packages like picomatch, node-forge, minimatch, undici, tar, etc.). Key direct dependency updates:
+- `pdfjs-dist` upgraded from v3 to v4 (worker import path changed in `src/client-integrations/pdfjs.js`)
+- `lodash-es` / `lodash` upgraded to 4.18.x
+- `vite` upgraded to 6.4.2+

@@ -91,7 +91,7 @@ export function layoutWrapperPlugin(userOpts: HierarchicalLayoutOptions = {}): P
   function extractRouteParams(pagePath: string, paramPattern: RegExp): string[] {
     const relativePath = normalizePath(pagePath);
     const params: string[] = [];
-    const matches = relativePath.matchAll(new RegExp(paramPattern));
+    const matches = relativePath.matchAll(paramPattern);
 
     for (const match of matches) {
       // match[1] will be "..." if it's a spread parameter, otherwise undefined
