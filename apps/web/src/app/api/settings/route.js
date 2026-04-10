@@ -27,6 +27,12 @@ export async function GET() {
     });
   }
 
+  if (settings.upload_interval_hours != null) {
+    settings.upload_interval_hours = parseFloat(settings.upload_interval_hours);
+  }
+  if (settings.daily_upload_limit != null) {
+    settings.daily_upload_limit = parseInt(settings.daily_upload_limit);
+  }
   return Response.json(settings);
 }
 
@@ -62,5 +68,11 @@ export async function PATCH(request) {
     RETURNING *
   `;
 
+  if (updated.upload_interval_hours != null) {
+    updated.upload_interval_hours = parseFloat(updated.upload_interval_hours);
+  }
+  if (updated.daily_upload_limit != null) {
+    updated.daily_upload_limit = parseInt(updated.daily_upload_limit);
+  }
   return Response.json(updated);
 }
