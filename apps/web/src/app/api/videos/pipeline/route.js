@@ -6,6 +6,12 @@ export async function GET() {
   if (!session || !session.user?.id)
     return Response.json({ error: "Unauthorized" }, { status: 401 });
 
+  const [settings] = await sql`
+    SELECT daily_upload_limit, upload_interval_hours FROM user_settings
+    WHERE user_id = ${session.user.id} LIMIT 1
+  `;
+  const dailyLimit = settings?.daily_upload_limit ?? 5;
+
   const videos = await sql`
     SELECT v.*, 
       m.title as meta_title, 
@@ -15,12 +21,8 @@ export async function GET() {
     LEFT JOIN metadata_versions m ON m.video_id = v.id AND m.is_recommended = true
     WHERE v.user_id = ${session.user.id}
       AND v.detected_at >= CURRENT_DATE
-    ORDER BY v.detected_at DESC
-  `;
-
-  const [settings] = await sql`
-    SELECT daily_upload_limit, upload_interval_hours FROM user_settings
-    WHERE user_id = ${session.user.id} LIMIT 1
+    ORDER BY v.detected_at ASC
+    LIMIT ${dailyLimit}
   `;
 
   const [publishedToday] = await sql`
@@ -51,7 +53,7 @@ export async function GET() {
   return Response.json({
     videos,
     stats: {
-      daily_limit: settings?.daily_upload_limit ?? 5,
+      daily_limit: dailyLimit,
       published_today: publishedToday?.cnt || 0,
       next_upload_in_minutes: nextUploadIn,
       interval_hours: parseFloat(settings?.upload_interval_hours ?? 2),
