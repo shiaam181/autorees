@@ -1,0 +1,49 @@
+modules = ["nodejs-20", "web", "bun", "postgresql-16"]
+[agent]
+expertMode = true
+
+[nix]
+channel = "stable-25_05"
+
+[workflows]
+runButton = "Project"
+
+[[workflows.workflow]]
+name = "Project"
+mode = "parallel"
+author = "agent"
+
+[[workflows.workflow.tasks]]
+task = "workflow.run"
+args = "Start application"
+
+[[workflows.workflow]]
+name = "Start application"
+author = "agent"
+
+[workflows.workflow.metadata]
+outputType = "webview"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "cd apps/web && LD_LIBRARY_PATH=/nix/store/bmi5znnqk4kg2grkrhk6py0irc8phf6l-gcc-14.2.1.20250322-lib/lib:$LD_LIBRARY_PATH bun run dev"
+waitForPort = 5000
+
+[[ports]]
+localPort = 5000
+externalPort = 80
+
+externalPort = 3002
+
+[deployment]
+deploymentTarget = "autoscale"
+run = ["bash", "-c", "cd apps/web && LD_LIBRARY_PATH=/nix/store/bmi5znnqk4kg2grkrhk6py0irc8phf6l-gcc-14.2.1.20250322-lib/lib:$LD_LIBRARY_PATH PORT=5000 node build/server/index.js"]
+build = ["bash", "-c", "cd apps/web && LD_LIBRARY_PATH=/nix/store/bmi5znnqk4kg2grkrhk6py0irc8phf6l-gcc-14.2.1.20250322-lib/lib:$LD_LIBRARY_PATH bun run build"]
+
+[userenv]
+
+[userenv.development]
+AUTH_URL = "https://a2a743cc-e173-44e4-9735-d48fd96e5c0b-00-1r75gy70sewt9.pike.replit.dev"
+AUTH_SECRET = "iTS3Yf1ebZ1U+KX247ScpYR/mJxXViOGaYbhXr2lQ+g="
+NEXT_PUBLIC_CREATE_APP_URL = "https://a2a743cc-e173-44e4-9735-d48fd96e5c0b-00-1r75gy70sewt9.pike.replit.dev"
+NEXT_PUBLIC_CREATE_ENV = "DEVELOPMENT"

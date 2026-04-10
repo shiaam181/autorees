@@ -307,4 +307,5 @@ import('../src/app/api/utils/automation-worker.js')
 export default await createHonoServer({
   app,
   defaultLogger: false,
+  port: Number(process.env.PORT || 5000),
 });
