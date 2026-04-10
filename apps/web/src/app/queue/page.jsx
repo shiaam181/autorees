@@ -132,6 +132,9 @@ export default function QueuePage() {
   const [isScheduling, setIsScheduling] = useState(false);
   const [scheduleDate, setScheduleDate] = useState("");
   const [scheduleTime, setScheduleTime] = useState("09:00");
+  const [editTitle, setEditTitle] = useState("");
+  const [editDescription, setEditDescription] = useState("");
+  const [editHashtags, setEditHashtags] = useState("");
 
   const { data: queue, isLoading } = useQuery({
     queryKey: ["video-queue"],
@@ -155,6 +158,53 @@ export default function QueuePage() {
     enabled: !!selectedVideo,
   });
 
+  React.useEffect(() => {
+    if (metadata) {
+      setEditTitle(metadata.title || "");
+      setEditDescription(metadata.description || "");
+      setEditHashtags((metadata.hashtags || []).join(", "));
+    } else if (selectedVideo) {
+      setEditTitle("");
+      setEditDescription("");
+      setEditHashtags("");
+    }
+  }, [metadata, selectedVideo?.id]);
+
+  const saveMetaMutation = useMutation({
+    mutationFn: async ({ video_id, title, description, hashtags }) => {
+      const res = await fetch("/api/videos/metadata/save", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ video_id, title, description, hashtags }),
+      });
+      if (!res.ok) {
+        const data = await res.json();
+        throw new Error(data.error || "Save failed");
+      }
+      return res.json();
+    },
+    onSuccess: () => {
+      toast.success("Metadata saved!");
+      refetchMetadata();
+      queryClient.invalidateQueries(["video-queue"]);
+    },
+    onError: (err) => toast.error(err.message),
+  });
+
+  const handleSaveMetadata = () => {
+    if (!editTitle.trim()) {
+      toast.error("Title is required");
+      return;
+    }
+    const hashtags = editHashtags.split(",").map(t => t.trim()).filter(Boolean);
+    saveMetaMutation.mutate({
+      video_id: selectedVideo.id,
+      title: editTitle,
+      description: editDescription,
+      hashtags,
+    });
+  };
+
   const generateMetaMutation = useMutation({
     mutationFn: async (id) => {
       const res = await fetch(`/api/metadata/generate/${id}`, {
@@ -166,8 +216,11 @@ export default function QueuePage() {
       }
       return res.json();
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
       toast.success("AI metadata generated successfully!");
+      if (data.recommended_title) setEditTitle(data.recommended_title);
+      if (data.recommended_description) setEditDescription(data.recommended_description);
+      if (data.recommended_hashtags) setEditHashtags(data.recommended_hashtags.join(", "));
       refetchMetadata();
       queryClient.invalidateQueries(["video-queue"]);
     },
@@ -317,16 +370,24 @@ export default function QueuePage() {
                   <FileEdit size={24} className="text-red-500" />
                   {selectedVideo.filename}
                 </h2>
-                <button
-                  onClick={() => generateMetaMutation.mutate(selectedVideo.id)}
-                  disabled={generateMetaMutation.isPending}
-                  className="bg-red-600/10 text-red-500 px-4 py-2 rounded-xl text-sm font-bold hover:bg-red-600/20 transition-all flex items-center gap-2 border border-red-500/10 disabled:opacity-50"
-                >
-                  <Sparkles size={16} />{" "}
-                  {generateMetaMutation.isPending
-                    ? "Generating..."
-                    : "Regenerate AI"}
-                </button>
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={handleSaveMetadata}
+                    disabled={saveMetaMutation.isPending || !editTitle.trim()}
+                    className="bg-green-600/10 text-green-500 px-4 py-2 rounded-xl text-sm font-bold hover:bg-green-600/20 transition-all flex items-center gap-2 border border-green-500/10 disabled:opacity-50"
+                  >
+                    <CheckCircle2 size={16} />
+                    {saveMetaMutation.isPending ? "Saving..." : "Save"}
+                  </button>
+                  <button
+                    onClick={() => generateMetaMutation.mutate(selectedVideo.id)}
+                    disabled={generateMetaMutation.isPending}
+                    className="bg-red-600/10 text-red-500 px-4 py-2 rounded-xl text-sm font-bold hover:bg-red-600/20 transition-all flex items-center gap-2 border border-red-500/10 disabled:opacity-50"
+                  >
+                    <Sparkles size={16} />
+                    {generateMetaMutation.isPending ? "Generating..." : "AI Generate"}
+                  </button>
+                </div>
               </div>
 
               <div className="space-y-6">
@@ -334,14 +395,15 @@ export default function QueuePage() {
                   <label className="text-sm font-bold text-gray-400 flex items-center justify-between">
                     <span>Title</span>
                     <span className="text-[10px] bg-white/5 px-2 py-0.5 rounded uppercase">
-                      YouTube Optimized
+                      {metadata?.ai_notes === "Manually written by user" ? "Manual" : "YouTube Optimized"}
                     </span>
                   </label>
                   <input
                     type="text"
-                    defaultValue={metadata?.title || ""}
+                    value={editTitle}
+                    onChange={(e) => setEditTitle(e.target.value)}
                     className="w-full bg-[#2a2a2a] border border-white/10 rounded-2xl p-4 text-white font-bold text-lg outline-none focus:border-red-600/50"
-                    placeholder="Generate metadata first..."
+                    placeholder="Enter your video title..."
                   />
                 </div>
 
@@ -351,31 +413,33 @@ export default function QueuePage() {
                   </label>
                   <textarea
                     rows={6}
-                    defaultValue={metadata?.description || ""}
+                    value={editDescription}
+                    onChange={(e) => setEditDescription(e.target.value)}
                     className="w-full bg-[#2a2a2a] border border-white/10 rounded-2xl p-4 text-white outline-none focus:border-red-600/50 resize-none"
-                    placeholder="Generate metadata first..."
+                    placeholder="Enter your video description... #shorts"
                   />
                 </div>
 
                 <div className="space-y-3">
                   <label className="text-sm font-bold text-gray-400">
-                    Hashtags
+                    Hashtags <span className="text-gray-600 font-normal">(comma separated)</span>
                   </label>
-                  <div className="flex flex-wrap gap-2 p-4 bg-[#2a2a2a] rounded-2xl border border-white/10 min-h-[100px]">
-                    {metadata?.hashtags?.map((tag, i) => (
-                      <span
-                        key={i}
-                        className="bg-red-600/20 text-red-500 px-3 py-1.5 rounded-lg text-sm font-bold border border-red-500/10"
-                      >
-                        {tag.startsWith("#") ? tag : `#${tag}`}
-                      </span>
-                    ))}
-                    {!metadata?.hashtags && (
-                      <span className="text-gray-600 italic text-sm">
-                        Generate metadata first...
-                      </span>
-                    )}
-                  </div>
+                  <input
+                    type="text"
+                    value={editHashtags}
+                    onChange={(e) => setEditHashtags(e.target.value)}
+                    className="w-full bg-[#2a2a2a] border border-white/10 rounded-2xl p-4 text-white outline-none focus:border-red-600/50"
+                    placeholder="#shorts, #viral, #fyp"
+                  />
+                  {editHashtags && (
+                    <div className="flex flex-wrap gap-2 mt-2">
+                      {editHashtags.split(",").map((tag, i) => tag.trim() && (
+                        <span key={i} className="bg-red-600/20 text-red-500 px-3 py-1.5 rounded-lg text-sm font-bold border border-red-500/10">
+                          {tag.trim().startsWith("#") ? tag.trim() : `#${tag.trim()}`}
+                        </span>
+                      ))}
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
@@ -388,8 +452,15 @@ export default function QueuePage() {
               {!isScheduling ? (
                 <div className="space-y-3">
                   <button
-                    onClick={() => publishMutation.mutate(selectedVideo.id)}
-                    disabled={publishMutation.isPending || !metadata?.title}
+                    onClick={() => {
+                      if (editTitle.trim() && (!metadata?.title || metadata.title !== editTitle)) {
+                        handleSaveMetadata();
+                        setTimeout(() => publishMutation.mutate(selectedVideo.id), 500);
+                      } else {
+                        publishMutation.mutate(selectedVideo.id);
+                      }
+                    }}
+                    disabled={publishMutation.isPending || !editTitle.trim()}
                     className="w-full bg-white text-black font-bold py-4 rounded-2xl hover:bg-gray-200 transition-all flex items-center justify-center gap-2 disabled:opacity-50"
                   >
                     <UploadCloud size={20} />{" "}

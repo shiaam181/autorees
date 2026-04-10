@@ -26,11 +26,24 @@ async function runPipeline() {
   try {
     await scanAllFolders();
     await generateMetadataForPending();
-    await publishReadyVideos();
+    await autoPublishReady();
   } catch (err) {
     console.error("[AutoWorker] Pipeline error:", err.message);
   } finally {
     isRunning = false;
+  }
+}
+
+async function autoPublishReady() {
+  const users = await sql`SELECT DISTINCT user_id FROM videos WHERE status IN ('ready_for_review', 'detected') LIMIT 50`;
+  for (const { user_id } of users) {
+    const [settings] = await sql`
+      SELECT auto_publish, review_required, daily_upload_limit, upload_interval_hours 
+      FROM user_settings WHERE user_id = ${user_id} LIMIT 1
+    `;
+    if (!settings?.auto_publish) continue;
+    if (settings?.review_required) continue;
+    await publishReadyVideos(user_id, settings);
   }
 }
 
@@ -52,9 +65,10 @@ async function scanAllFolders() {
       }
 
       const [settings] = await sql`
-        SELECT review_required, daily_upload_limit FROM user_settings WHERE user_id = ${source.user_id} LIMIT 1
+        SELECT review_required, auto_publish, daily_upload_limit FROM user_settings WHERE user_id = ${source.user_id} LIMIT 1
       `;
       const reviewRequired = settings?.review_required ?? true;
+      const autoPublish = settings?.auto_publish ?? false;
       const dailyLimit = settings?.daily_upload_limit ?? 5;
 
       const [todayCount] = await sql`
@@ -93,7 +107,7 @@ async function scanAllFolders() {
         const isVertical = height > width;
         const isShortDuration = duration > 0 && duration <= 60;
         const isIdealShort = isVertical && isShortDuration;
-        const initialStatus = reviewRequired || !isIdealShort ? "pending_review" : "detected";
+        const initialStatus = (!reviewRequired && autoPublish) ? "detected" : (reviewRequired || !isIdealShort ? "pending_review" : "detected");
 
         const [video] = await sql`
           INSERT INTO videos (user_id, drive_source_id, drive_file_id, filename, file_size, duration, width, height, mime_type, status, content_hash, detected_at)
@@ -208,21 +222,32 @@ Respond ONLY in JSON format (no markdown code blocks):
   }
 }
 
-async function publishReadyVideos() {
-  const videos = await sql`
-    SELECT v.*, m.title as meta_title, m.description as meta_description, m.hashtags as meta_hashtags
-    FROM videos v
-    LEFT JOIN metadata_versions m ON m.video_id = v.id AND m.is_recommended = true
-    WHERE v.status = 'ready_for_review'
-    AND v.retry_count < 3
-    ORDER BY v.detected_at ASC
-    LIMIT 3
-  `;
+async function publishReadyVideos(filterUserId, preSettings) {
+  const videos = filterUserId
+    ? await sql`
+        SELECT v.*, m.title as meta_title, m.description as meta_description, m.hashtags as meta_hashtags
+        FROM videos v
+        LEFT JOIN metadata_versions m ON m.video_id = v.id AND m.is_recommended = true
+        WHERE v.status = 'ready_for_review'
+        AND v.user_id = ${filterUserId}
+        AND v.retry_count < 3
+        ORDER BY v.detected_at ASC
+        LIMIT 3
+      `
+    : await sql`
+        SELECT v.*, m.title as meta_title, m.description as meta_description, m.hashtags as meta_hashtags
+        FROM videos v
+        LEFT JOIN metadata_versions m ON m.video_id = v.id AND m.is_recommended = true
+        WHERE v.status = 'ready_for_review'
+        AND v.retry_count < 3
+        ORDER BY v.detected_at ASC
+        LIMIT 3
+      `;
 
   for (const video of videos) {
-    const [settings] = await sql`
+    const settings = preSettings || (await sql`
       SELECT auto_publish, daily_upload_limit, upload_interval_hours FROM user_settings WHERE user_id = ${video.user_id} LIMIT 1
-    `;
+    `.then(r => r[0]));
     if (!settings?.auto_publish) continue;
 
     const dailyLimit = settings?.daily_upload_limit ?? 5;
