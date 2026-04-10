@@ -44,6 +44,7 @@ async function tryGeminiKey(key, prompt) {
 
       if (res.status === 429) {
         console.log(`[AI] Gemini key ${key.id || 'env'} rate limited on ${model}`);
+        await new Promise(r => setTimeout(r, 2000));
         continue;
       }
       if (res.status === 400 && errText.includes("API_KEY_INVALID")) {
@@ -90,6 +91,7 @@ async function tryOpenAIKey(key, prompt) {
 
       if (res.status === 429) {
         console.log(`[AI] OpenAI key ${key.id} rate limited on ${model}`);
+        await new Promise(r => setTimeout(r, 2000));
         continue;
       }
       if (res.status === 401) {

@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { toast } from "sonner";
 import {
   CheckCircle2,
   ExternalLink,
@@ -46,12 +47,12 @@ export default function HistoryPage() {
       return res.json();
     },
     onSuccess: () => {
-      alert("Video queued for retry!");
+      toast.success("Video queued for retry!");
       queryClient.invalidateQueries(["upload-history"]);
       queryClient.invalidateQueries(["video-queue"]);
     },
     onError: (err) => {
-      alert(`Retry failed: ${err.message}`);
+      toast.error(`Retry failed: ${err.message}`);
     },
   });
 

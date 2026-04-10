@@ -17,6 +17,7 @@ import {
   VolumeX,
 } from "lucide-react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { toast } from "sonner";
 import { StatusBadge } from "@/components/StatusBadge";
 
 const VideoThumbnail = ({ videoId, className = "" }) => {
@@ -166,11 +167,16 @@ export default function QueuePage() {
       return res.json();
     },
     onSuccess: () => {
-      alert("AI metadata generated successfully!");
+      toast.success("AI metadata generated successfully!");
       refetchMetadata();
+      queryClient.invalidateQueries(["video-queue"]);
     },
     onError: (err) => {
-      alert(`Error: ${err.message}`);
+      if (err.message.includes("rate limit") || err.message.includes("exhausted")) {
+        toast.error("API rate limit reached. Wait a minute or add more keys in API Keys page.");
+      } else {
+        toast.error(err.message);
+      }
     },
   });
 
@@ -184,13 +190,13 @@ export default function QueuePage() {
       return res.json();
     },
     onSuccess: (data) => {
-      alert("Video published to YouTube!");
+      toast.success("Video published to YouTube!");
       setSelectedVideo(null);
       queryClient.invalidateQueries(["video-queue"]);
       queryClient.invalidateQueries(["upload-history"]);
     },
     onError: (err) => {
-      alert(`Upload failed: ${err.message}`);
+      toast.error(`Upload failed: ${err.message}`);
     },
   });
 
@@ -208,19 +214,19 @@ export default function QueuePage() {
       return res.json();
     },
     onSuccess: () => {
-      alert("Video scheduled successfully!");
+      toast.success("Video scheduled successfully!");
       setIsScheduling(false);
       setSelectedVideo(null);
       queryClient.invalidateQueries(["video-queue"]);
     },
     onError: (err) => {
-      alert(`Schedule failed: ${err.message}`);
+      toast.error(`Schedule failed: ${err.message}`);
     },
   });
 
   const handleSchedule = () => {
     if (!scheduleDate || !scheduleTime) {
-      alert("Please select both date and time");
+      toast.error("Please select both date and time");
       return;
     }
     const scheduledFor = new Date(
