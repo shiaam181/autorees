@@ -42,9 +42,16 @@ export async function callGeminiWithRotation(userId, prompt) {
     throw new Error("No Gemini API keys configured. Add one on the API Keys page.");
   }
 
-  const models = ["gemini-2.0-flash", "gemini-1.5-flash"];
+  const models = [
+    "gemini-2.0-flash",
+    "gemini-2.5-flash-preview-05-20",
+    "gemini-1.5-pro",
+    "gemini-1.5-flash",
+    "gemini-2.5-pro-preview-05-06",
+  ];
 
   for (const key of keys) {
+    let keyRateLimited = false;
     for (const model of models) {
       try {
         const res = await fetch(
@@ -61,28 +68,39 @@ export async function callGeminiWithRotation(userId, prompt) {
 
         if (res.ok) {
           if (key.id) await markKeyUsed(key.id);
+          console.log(`[Gemini] Success with key ${key.id || 'env'} on model ${model}`);
           return await res.json();
         }
 
+        const errText = await res.text();
+
         if (res.status === 429) {
-          if (key.id) await markKeyError(key.id);
-          console.log(`[Gemini] Key ${key.id || 'env'} rate limited on ${model}, trying next...`);
+          console.log(`[Gemini] Key ${key.id || 'env'} rate limited on ${model}, trying next model...`);
+          keyRateLimited = true;
           continue;
         }
 
-        const errText = await res.text();
         if (res.status === 400 && errText.includes("API_KEY_INVALID")) {
+          console.log(`[Gemini] Key ${key.id || 'env'} is invalid, disabling`);
           if (key.id) {
             await sql`UPDATE api_keys SET is_active = false WHERE id = ${key.id}`;
           }
+          break;
+        }
+
+        if (res.status === 404) {
           continue;
         }
 
-        throw new Error(`Gemini API error (${res.status}): ${errText}`);
+        console.error(`[Gemini] Error (${res.status}) on ${model}:`, errText.substring(0, 200));
+        continue;
       } catch (err) {
-        if (err.message.includes("Gemini API error")) throw err;
-        console.error(`[Gemini] Error with key ${key.id || 'env'}:`, err.message);
+        console.error(`[Gemini] Network error with key ${key.id || 'env'} on ${model}:`, err.message);
+        continue;
       }
+    }
+    if (keyRateLimited && key.id) {
+      await markKeyError(key.id);
     }
   }
 

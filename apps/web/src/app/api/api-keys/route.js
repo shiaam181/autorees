@@ -28,22 +28,40 @@ export async function POST(request) {
     return Response.json({ error: "Invalid API key" }, { status: 400 });
   }
 
-  const testRes = await fetch(
-    `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${api_key.trim()}`,
-    {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        contents: [{ parts: [{ text: "Say hello in one word" }] }],
-      }),
-    }
-  );
+  const testModels = ["gemini-2.0-flash", "gemini-1.5-pro", "gemini-1.5-flash"];
+  let keyValid = false;
+  let lastErr = "";
 
-  if (!testRes.ok) {
+  for (const model of testModels) {
+    const testRes = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${api_key.trim()}`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          contents: [{ parts: [{ text: "Say hello in one word" }] }],
+        }),
+      }
+    );
+
+    if (testRes.ok) {
+      keyValid = true;
+      break;
+    }
+
     const err = await testRes.text();
     if (testRes.status === 400 && err.includes("API_KEY_INVALID")) {
       return Response.json({ error: "Invalid API key. Please check and try again." }, { status: 400 });
     }
+    if (testRes.status === 429) {
+      keyValid = true;
+      break;
+    }
+    lastErr = err;
+  }
+
+  if (!keyValid) {
+    return Response.json({ error: `Key verification failed: ${lastErr.substring(0, 200)}` }, { status: 400 });
   }
 
   const [key] = await sql`
