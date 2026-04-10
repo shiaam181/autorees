@@ -54,12 +54,18 @@ export default function DriveFoldersPage() {
   const scanMutation = useMutation({
     mutationFn: async (id) => {
       const res = await fetch(`/api/drive/scan/${id}`, { method: "POST" });
-      if (!res.ok) throw new Error("Scan failed");
+      if (!res.ok) {
+        const error = await res.json();
+        throw new Error(error.error || "Scan failed");
+      }
       return res.json();
     },
-    onSuccess: () => {
-      toast.success("Folder scan initiated");
+    onSuccess: (data) => {
+      toast.success(`Scan complete! Found ${data.count || 0} new videos (${data.duplicates || 0} duplicates skipped)`);
       queryClient.invalidateQueries(["drive-sources"]);
+    },
+    onError: (err) => {
+      toast.error(err.message);
     },
   });
 
