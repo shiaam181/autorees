@@ -19,9 +19,11 @@ export default function SettingsPage() {
     queryKey: ["user-settings"],
     queryFn: async () => {
       const res = await fetch("/api/settings");
+      if (res.status === 401) return null;
       if (!res.ok) throw new Error("Failed to fetch settings");
       return res.json();
     },
+    retry: false,
   });
 
   const updateMutation = useMutation({

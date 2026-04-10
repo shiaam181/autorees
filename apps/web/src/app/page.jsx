@@ -36,9 +36,11 @@ export default function Dashboard() {
     queryKey: ["dashboard-stats"],
     queryFn: async () => {
       const res = await fetch("/api/dashboard/stats");
+      if (res.status === 401) return null;
       if (!res.ok) throw new Error("Failed to fetch stats");
       return res.json();
     },
+    retry: false,
   });
 
   const displayStats = stats || {

@@ -29,9 +29,11 @@ export default function HistoryPage() {
           ? "/api/videos/history"
           : `/api/videos/history?status=${statusFilter}`;
       const res = await fetch(url);
+      if (res.status === 401) return [];
       if (!res.ok) throw new Error("Failed to fetch history");
       return res.json();
     },
+    retry: false,
   });
 
   const retryMutation = useMutation({

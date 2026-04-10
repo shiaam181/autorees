@@ -17,13 +17,15 @@ export default function DriveFoldersPage() {
   const queryClient = useQueryClient();
   const [folderUrl, setFolderUrl] = useState("");
 
-  const { data: sources, isLoading } = useQuery({
+  const { data: sources, isLoading, isError } = useQuery({
     queryKey: ["drive-sources"],
     queryFn: async () => {
       const res = await fetch("/api/drive/folders");
+      if (res.status === 401) return [];
       if (!res.ok) throw new Error("Failed to fetch folders");
       return res.json();
     },
+    retry: false,
   });
 
   const addFolderMutation = useMutation({
