@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useRef } from "react";
 import {
   FileVideo,
   Sparkles,
@@ -11,9 +11,61 @@ import {
   Info,
   MoreVertical,
   Clock,
+  Play,
+  Pause,
+  Volume2,
+  VolumeX,
 } from "lucide-react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { StatusBadge } from "@/components/StatusBadge";
+
+const VideoThumbnail = ({ videoId, className = "" }) => {
+  const [playing, setPlaying] = useState(false);
+  const [error, setError] = useState(false);
+  const videoRef = useRef(null);
+
+  if (error) {
+    return (
+      <div className={`flex items-center justify-center bg-[#2a2a2a] ${className}`}>
+        <FileVideo size={40} className="text-white/10" />
+      </div>
+    );
+  }
+
+  return (
+    <div
+      className={`relative group/vid cursor-pointer bg-black ${className}`}
+      onClick={() => {
+        if (!videoRef.current) return;
+        if (playing) {
+          videoRef.current.pause();
+          setPlaying(false);
+        } else {
+          videoRef.current.play().catch(() => setError(true));
+          setPlaying(true);
+        }
+      }}
+    >
+      <video
+        ref={videoRef}
+        src={`/api/videos/stream/${videoId}`}
+        className="w-full h-full object-cover"
+        muted
+        playsInline
+        preload="metadata"
+        onError={() => setError(true)}
+        onEnded={() => setPlaying(false)}
+      />
+      {!playing && (
+        <div className="absolute inset-0 flex items-center justify-center bg-black/30 group-hover/vid:bg-black/40 transition-all">
+          <div className="w-10 h-10 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center border border-white/20">
+            <Play size={18} className="text-white ml-0.5" fill="white" />
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
 
 const VideoReviewCard = ({ video, onReview }) => {
   const isVertical = video.height > video.width;
@@ -24,13 +76,13 @@ const VideoReviewCard = ({ video, onReview }) => {
 
   return (
     <div className="bg-[#1a1a1a] rounded-3xl border border-white/5 overflow-hidden hover:border-white/10 transition-all flex flex-col md:flex-row h-full md:h-48 group">
-      <div className="md:w-36 bg-[#2a2a2a] relative flex items-center justify-center border-b md:border-b-0 md:border-r border-white/5 overflow-hidden">
-        <FileVideo size={40} className="text-white/10" />
-        <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent flex items-end p-2 gap-1 flex-col">
-          <span className="text-[10px] font-bold bg-black/40 px-1.5 py-0.5 rounded text-white backdrop-blur-md border border-white/10">
+      <div className="md:w-36 relative border-b md:border-b-0 md:border-r border-white/5 overflow-hidden">
+        <VideoThumbnail videoId={video.id} className="w-full h-full min-h-[120px]" />
+        <div className="absolute top-2 right-2 flex flex-col gap-1 pointer-events-none">
+          <span className="text-[10px] font-bold bg-black/60 px-1.5 py-0.5 rounded text-white backdrop-blur-md border border-white/10">
             {aspectLabel}
           </span>
-          <span className="text-[10px] font-bold bg-black/40 px-1.5 py-0.5 rounded text-white backdrop-blur-md border border-white/10">
+          <span className="text-[10px] font-bold bg-black/60 px-1.5 py-0.5 rounded text-white backdrop-blur-md border border-white/10">
             {duration}
           </span>
         </div>
@@ -239,6 +291,19 @@ export default function QueuePage() {
             >
               <ChevronRight size={16} className="rotate-180" /> Back to Queue
             </button>
+
+            <div className="bg-[#1a1a1a] rounded-3xl border border-white/5 overflow-hidden">
+              <div className="relative bg-black w-full" style={{ maxHeight: "400px" }}>
+                <video
+                  key={selectedVideo.id}
+                  src={`/api/videos/stream/${selectedVideo.id}`}
+                  className="w-full max-h-[400px] object-contain"
+                  controls
+                  playsInline
+                  preload="metadata"
+                />
+              </div>
+            </div>
 
             <div className="bg-[#1a1a1a] p-8 rounded-3xl border border-white/5 space-y-8">
               <div className="flex items-center justify-between">
