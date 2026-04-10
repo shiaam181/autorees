@@ -1,0 +1,8 @@
+{
+  "name": "yt-shorts-auto-uploader",
+  "private": true,
+  "scripts": {
+    "build": "cd apps/web && bun run build",
+    "start": "cd apps/web && node build/server/index.js"
+  }
+}
