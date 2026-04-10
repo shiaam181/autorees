@@ -110,8 +110,12 @@ export async function GET(request) {
       VALUES (${session.user.id}, 'oauth_connected', 'Google account connected successfully', ${JSON.stringify({ providers, email: userInfo.email })})
     `;
 
-    return Response.redirect(
-      `${process.env.NEXT_PUBLIC_CREATE_APP_URL}/accounts?success=true`,
+    return new Response(
+      `<html><body><script>
+        if (window.opener) { window.close(); }
+        else { window.location.href = "/accounts?success=true"; }
+      </script><p>Connected successfully! You can close this window.</p></body></html>`,
+      { headers: { "Content-Type": "text/html" } }
     );
   } catch (error) {
     console.error("OAuth callback error:", error);
