@@ -28,36 +28,48 @@ export async function POST(request) {
     return Response.json({ error: "Invalid API key" }, { status: 400 });
   }
 
-  const testModels = ["gemini-2.0-flash", "gemini-1.5-pro", "gemini-1.5-flash"];
+  const selectedProvider = provider || "gemini";
   let keyValid = false;
   let lastErr = "";
 
-  for (const model of testModels) {
-    const testRes = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${api_key.trim()}`,
-      {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          contents: [{ parts: [{ text: "Say hello in one word" }] }],
-        }),
-      }
-    );
-
+  if (selectedProvider === "openai") {
+    const testRes = await fetch("https://api.openai.com/v1/models", {
+      headers: { Authorization: `Bearer ${api_key.trim()}` },
+    });
     if (testRes.ok) {
       keyValid = true;
-      break;
+    } else {
+      const err = await testRes.text();
+      if (testRes.status === 401) {
+        return Response.json({ error: "Invalid OpenAI API key. Please check and try again." }, { status: 400 });
+      }
+      if (testRes.status === 429) {
+        keyValid = true;
+      } else {
+        lastErr = err;
+      }
     }
-
-    const err = await testRes.text();
-    if (testRes.status === 400 && err.includes("API_KEY_INVALID")) {
-      return Response.json({ error: "Invalid API key. Please check and try again." }, { status: 400 });
+  } else {
+    const testModels = ["gemini-2.0-flash", "gemini-1.5-pro", "gemini-1.5-flash"];
+    for (const model of testModels) {
+      const testRes = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${api_key.trim()}`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            contents: [{ parts: [{ text: "Say hello in one word" }] }],
+          }),
+        }
+      );
+      if (testRes.ok) { keyValid = true; break; }
+      const err = await testRes.text();
+      if (testRes.status === 400 && err.includes("API_KEY_INVALID")) {
+        return Response.json({ error: "Invalid Gemini API key. Please check and try again." }, { status: 400 });
+      }
+      if (testRes.status === 429) { keyValid = true; break; }
+      lastErr = err;
     }
-    if (testRes.status === 429) {
-      keyValid = true;
-      break;
-    }
-    lastErr = err;
   }
 
   if (!keyValid) {
