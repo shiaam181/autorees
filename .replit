@@ -37,3 +37,8 @@ externalPort = 80
 deploymentTarget = "autoscale"
 run = ["bash", "-c", "cd apps/web && bun run start"]
 build = ["bash", "-c", "cd apps/web && bun run build"]
+
+[userenv]
+
+[userenv.development]
+AUTH_URL = "https://a2a743cc-e173-44e4-9735-d48fd96e5c0b-00-1r75gy70sewt9.pike.replit.dev"
