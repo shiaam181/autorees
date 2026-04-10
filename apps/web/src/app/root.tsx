@@ -450,7 +450,7 @@ export function Layout({ children }: { children: ReactNode }) {
       </head>
       <body suppressHydrationWarning>
         <ClientOnly loader={() => children} />
-        <Toaster position={isMobile ? 'top-center' : 'bottom-right'} />
+        <Toaster position="top-center" theme="dark" richColors toastOptions={{ style: { background: '#1a1a1a', border: '1px solid rgba(255,255,255,0.1)', color: '#fff', fontSize: '14px', borderRadius: '12px', padding: '14px 20px' } }} />
         <ScrollRestoration />
         <Scripts />
         <script src="https://kit.fontawesome.com/2c15cc0cc7.js" crossOrigin="anonymous" async />
