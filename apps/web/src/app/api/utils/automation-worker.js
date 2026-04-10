@@ -129,8 +129,7 @@ async function generateMetadataForPending() {
     LIMIT 5
   `;
 
-  const geminiApiKey = process.env.GEMINI_API_KEY;
-  if (!geminiApiKey || videos.length === 0) return;
+  if (videos.length === 0) return;
 
   for (const video of videos) {
     try {
@@ -167,20 +166,8 @@ Respond ONLY in JSON format (no markdown code blocks):
   "notes": "reasoning for recommendations"
 }`;
 
-      const aiResponse = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${geminiApiKey}`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            contents: [{ parts: [{ text: prompt }] }],
-            generationConfig: { temperature: 0.7 },
-          }),
-        }
-      );
-
-      if (!aiResponse.ok) throw new Error(`Gemini API failed: ${aiResponse.status}`);
-      const aiData = await aiResponse.json();
+      const { callGeminiWithRotation } = await import("./get-gemini-key.js");
+      const aiData = await callGeminiWithRotation(video.user_id, prompt);
 
       let content = (aiData.candidates?.[0]?.content?.parts?.[0]?.text || "").trim();
       const jsonMatch = content.match(/\{[\s\S]*\}/);

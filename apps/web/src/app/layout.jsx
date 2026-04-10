@@ -10,6 +10,7 @@ import {
   PlusCircle,
   Menu,
   X,
+  Key,
 } from "lucide-react";
 import useUser from "@/utils/useUser";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
@@ -57,6 +58,7 @@ export default function RootLayout({ children }) {
     { href: "/queue", icon: ListVideo, label: "Review Queue" },
     { href: "/history", icon: History, label: "Upload History" },
     { href: "/accounts", icon: Youtube, label: "Connected Accounts" },
+    { href: "/api-keys", icon: Key, label: "API Keys" },
     { href: "/settings", icon: Settings, label: "Settings" },
   ];
 

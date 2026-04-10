@@ -1,48 +1,6 @@
 import sql from "@/app/api/utils/sql";
 import { auth } from "@/auth";
-
-const MODELS = [
-  "gemini-2.0-flash",
-  "gemini-1.5-flash",
-  "gemini-1.5-flash-8b",
-];
-
-async function callGeminiWithRetry(prompt, apiKey, maxRetries = 3) {
-  for (const model of MODELS) {
-    for (let attempt = 0; attempt < maxRetries; attempt++) {
-      const res = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            contents: [{ parts: [{ text: prompt }] }],
-            generationConfig: { temperature: 0.7 },
-          }),
-        }
-      );
-
-      if (res.ok) {
-        const data = await res.json();
-        return data;
-      }
-
-      if (res.status === 429) {
-        const retryMatch = await res.text();
-        const delayMatch = retryMatch.match(/retry in ([\d.]+)s/i);
-        const waitSec = delayMatch ? Math.min(parseFloat(delayMatch[1]), 60) : (attempt + 1) * 15;
-        console.log(`[Gemini] Rate limited on ${model}, waiting ${waitSec}s (attempt ${attempt + 1}/${maxRetries})`);
-        await new Promise((r) => setTimeout(r, waitSec * 1000));
-        continue;
-      }
-
-      const errText = await res.text();
-      throw new Error(`Gemini API failed (${res.status}) on ${model}: ${errText}`);
-    }
-    console.log(`[Gemini] All retries exhausted for ${model}, trying next model...`);
-  }
-  throw new Error("All Gemini models exhausted. Your API quota may be fully used. Please wait a few minutes and try again, or upgrade your Gemini API plan.");
-}
+import { callGeminiWithRotation } from "@/app/api/utils/get-gemini-key";
 
 export async function POST(req, { params }) {
   const session = await auth();
@@ -96,10 +54,7 @@ Respond ONLY in JSON format (no markdown code blocks):
   "notes": "reasoning for recommendations"
 }`;
 
-    const geminiApiKey = process.env.GEMINI_API_KEY;
-    if (!geminiApiKey) throw new Error("GEMINI_API_KEY not configured");
-
-    const aiData = await callGeminiWithRetry(prompt, geminiApiKey);
+    const aiData = await callGeminiWithRotation(session.user.id, prompt);
 
     let content = (aiData.candidates?.[0]?.content?.parts?.[0]?.text || "").trim();
     const jsonMatch = content.match(/\{[\s\S]*\}/);
