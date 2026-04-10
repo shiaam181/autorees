@@ -8,14 +8,26 @@ export async function GET() {
 
   const [settings] =
     await sql`SELECT * FROM user_settings WHERE user_id = ${session.user.id}`;
-  return Response.json(
-    settings || {
-      default_privacy: "private",
+
+  if (!settings) {
+    await sql`INSERT INTO user_settings (user_id) VALUES (${session.user.id}) ON CONFLICT (user_id) DO NOTHING`;
+    const [newSettings] = await sql`SELECT * FROM user_settings WHERE user_id = ${session.user.id}`;
+    return Response.json(newSettings || {
+      review_required: true,
+      auto_queue: false,
+      auto_scan: true,
+      auto_metadata: true,
+      auto_publish: false,
+      scan_interval_minutes: 5,
+      default_privacy: "public",
       default_category: "22",
       default_language: "en",
-      review_required: true,
-    },
-  );
+      branding_line: "Created with YT Shorts Auto",
+      made_for_kids: false,
+    });
+  }
+
+  return Response.json(settings);
 }
 
 export async function PATCH(request) {
@@ -24,14 +36,25 @@ export async function PATCH(request) {
     return Response.json({ error: "Unauthorized" }, { status: 401 });
 
   const body = await request.json();
-  const { default_privacy, default_category, review_required } = body;
+
+  await sql`INSERT INTO user_settings (user_id) VALUES (${session.user.id}) ON CONFLICT (user_id) DO NOTHING`;
 
   const [updated] = await sql`
     UPDATE user_settings 
     SET 
-      default_privacy = COALESCE(${default_privacy}, default_privacy),
-      default_category = COALESCE(${default_category}, default_category),
-      review_required = COALESCE(${review_required}, review_required),
+      review_required = COALESCE(${body.review_required ?? null}, review_required),
+      auto_queue = COALESCE(${body.auto_queue ?? null}, auto_queue),
+      auto_scan = COALESCE(${body.auto_scan ?? null}, auto_scan),
+      auto_metadata = COALESCE(${body.auto_metadata ?? null}, auto_metadata),
+      auto_publish = COALESCE(${body.auto_publish ?? null}, auto_publish),
+      scan_interval_minutes = COALESCE(${body.scan_interval_minutes ?? null}, scan_interval_minutes),
+      default_privacy = COALESCE(${body.default_privacy ?? null}, default_privacy),
+      default_category = COALESCE(${body.default_category ?? null}, default_category),
+      default_language = COALESCE(${body.default_language ?? null}, default_language),
+      branding_line = COALESCE(${body.branding_line ?? null}, branding_line),
+      made_for_kids = COALESCE(${body.made_for_kids ?? null}, made_for_kids),
+      notification_email = COALESCE(${body.notification_email ?? null}, notification_email),
+      default_timezone = COALESCE(${body.default_timezone ?? null}, default_timezone),
       updated_at = CURRENT_TIMESTAMP
     WHERE user_id = ${session.user.id}
     RETURNING *
