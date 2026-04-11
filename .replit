@@ -56,3 +56,9 @@ AUTH_URL = "https://a2a743cc-e173-44e4-9735-d48fd96e5c0b-00-1r75gy70sewt9.pike.r
 AUTH_SECRET = "iTS3Yf1ebZ1U+KX247ScpYR/mJxXViOGaYbhXr2lQ+g="
 NEXT_PUBLIC_CREATE_APP_URL = "https://a2a743cc-e173-44e4-9735-d48fd96e5c0b-00-1r75gy70sewt9.pike.replit.dev"
 NEXT_PUBLIC_CREATE_ENV = "DEVELOPMENT"
+
+[userenv.production]
+AUTH_URL = "https://autoshorts.replit.app"
+AUTH_SECRET = "iTS3Yf1ebZ1U+KX247ScpYR/mJxXViOGaYbhXr2lQ+g="
+NEXT_PUBLIC_CREATE_APP_URL = "https://autoshorts.replit.app"
+NEXT_PUBLIC_CREATE_ENV = "PRODUCTION"
