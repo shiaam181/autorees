@@ -1,0 +1,10 @@
+[0m[2m[35m$[0m [2m[1mreact-router dev[0m
+  [32m➜[39m  [1mLocal[22m:   [36mhttp://localhost:[1m5000[22m/[39m
+  [32m➜[39m  [1mNetwork[22m: [36mhttp://172.31.68.98:[1m5000[22m/[39m
+[2m[32m  ➜[39m[22m[2m  press [22m[1mh + enter[22m[2m to show help[22m
+[AutoWorker] Starting automation worker (interval: 300s)
+🚧 Running in development mode
+[traceId:a977abe8-68e6-4da1-befa-aa50aa13bbb6] [33m[auth][warn][env-url-basepath-redundant][0m Read more: https://warnings.authjs.dev#env-url-basepath-redundant
+[traceId:3acd6dac-9905-4108-97e4-995e573f607d] [33m[auth][warn][env-url-basepath-redundant][0m Read more: https://warnings.authjs.dev#env-url-basepath-redundant
+[traceId:9ebee8e7-e6fb-41e5-be0c-164c805e7a1a] [33m[auth][warn][env-url-basepath-redundant][0m Read more: https://warnings.authjs.dev#env-url-basepath-redundant
+[0m[31merror[0m[2m:[0m script [1m"dev"[0m exited with code 143[0m
