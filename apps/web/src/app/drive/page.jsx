@@ -16,6 +16,7 @@ import { toast } from "sonner";
 export default function DriveFoldersPage() {
   const queryClient = useQueryClient();
   const [folderUrl, setFolderUrl] = useState("");
+  const [openMenu, setOpenMenu] = useState(null);
 
   const { data: sources, isLoading, isError } = useQuery({
     queryKey: ["drive-sources"],
@@ -62,6 +63,29 @@ export default function DriveFoldersPage() {
     },
     onSuccess: (data) => {
       toast.success(`Scan complete! Found ${data.count || 0} new videos (${data.duplicates || 0} duplicates skipped)`);
+      queryClient.invalidateQueries(["drive-sources"]);
+    },
+    onError: (err) => {
+      toast.error(err.message);
+    },
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: async (id) => {
+      const res = await fetch(`/api/drive/folders`, {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id }),
+      });
+      if (!res.ok) {
+        const error = await res.json();
+        throw new Error(error.error || "Failed to delete folder");
+      }
+      return res.json();
+    },
+    onSuccess: () => {
+      toast.success("Folder removed successfully");
+      setOpenMenu(null);
       queryClient.invalidateQueries(["drive-sources"]);
     },
     onError: (err) => {
@@ -143,9 +167,30 @@ export default function DriveFoldersPage() {
                   <div className="p-4 rounded-2xl bg-red-600/10 text-red-600">
                     <FolderOpen size={28} />
                   </div>
-                  <button className="p-2 hover:bg-white/5 rounded-xl transition-all text-gray-500 hover:text-white">
-                    <MoreVertical size={20} />
-                  </button>
+                  <div className="relative">
+                    <button
+                      onClick={() => setOpenMenu(openMenu === source.id ? null : source.id)}
+                      className="p-2 hover:bg-white/5 rounded-xl transition-all text-gray-500 hover:text-white"
+                    >
+                      <MoreVertical size={20} />
+                    </button>
+                    {openMenu === source.id && (
+                      <div className="absolute right-0 top-10 z-50 bg-[#2a2a2a] border border-white/10 rounded-xl shadow-2xl py-1 min-w-[160px]">
+                        <button
+                          onClick={() => {
+                            if (confirm("Are you sure you want to remove this folder?")) {
+                              deleteMutation.mutate(source.id);
+                            } else {
+                              setOpenMenu(null);
+                            }
+                          }}
+                          className="w-full px-4 py-3 text-left text-sm text-red-400 hover:bg-white/5 flex items-center gap-2 transition-all"
+                        >
+                          <Trash2 size={14} /> Remove Folder
+                        </button>
+                      </div>
+                    )}
+                  </div>
                 </div>
 
                 <div className="flex-1 min-w-0">

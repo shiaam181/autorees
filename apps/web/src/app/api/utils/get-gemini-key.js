@@ -136,7 +136,7 @@ export async function callGeminiWithRotation(userId, prompt) {
       const text = result.trim();
       const jsonMatch = text.match(/\{[\s\S]*\}/);
       const parsed = jsonMatch ? jsonMatch[0] : text;
-      return { candidates: [{ content: { parts: [{ text: parsed }] } }] };
+      return { provider: key.provider, result: parsed };
     }
   }
 

@@ -141,7 +141,7 @@ if (process.env.AUTH_SECRET) {
                   const { email, name, provider } = credentials;
                   if (!email || typeof email !== 'string') return null;
 
-                  const existing = await adapter.getUserByEmail(email);
+                  const existing = await adapter!.getUserByEmail(email);
                   if (existing) return existing;
 
                   const allowedProviders = new Set(['google', 'facebook', 'twitter', 'apple']);
@@ -149,15 +149,15 @@ if (process.env.AUTH_SECRET) {
                     typeof provider === 'string' && allowedProviders.has(provider.toLowerCase())
                       ? provider.toLowerCase()
                       : 'google';
-                  const newUser = await adapter.createUser({
+                  const newUser = await adapter!.createUser({
                     emailVerified: null,
                     email,
                     name:
                       typeof name === 'string' && name.length > 0
                         ? name
                         : undefined,
-                  });
-                  await adapter.linkAccount({
+                  } as any);
+                  await adapter!.linkAccount({
                     type: 'oauth',
                     userId: newUser.id,
                     provider: providerName,
@@ -191,7 +191,7 @@ if (process.env.AUTH_SECRET) {
             }
 
             // logic to verify if user exists
-            const user = await adapter.getUserByEmail(email);
+            const user = await adapter!.getUserByEmail(email);
             if (!user) {
               return null;
             }
@@ -238,15 +238,15 @@ if (process.env.AUTH_SECRET) {
               }
 
               // logic to verify if user exists
-              const user = await adapter.getUserByEmail(email);
+              const user = await adapter!.getUserByEmail(email);
               if (!user) {
-                const newUser = await adapter.createUser({
+                const newUser = await adapter!.createUser({
                   emailVerified: null,
                   email,
                   name: typeof name === 'string' && name.length > 0 ? name : undefined,
                   image: typeof image === 'string' && image.length > 0 ? image : undefined,
-                });
-                await adapter.linkAccount({
+                } as any);
+                await adapter!.linkAccount({
                   extraData: {
                     password: await hash(password),
                   },
@@ -260,7 +260,7 @@ if (process.env.AUTH_SECRET) {
               return null;
             } catch (e) {
               const fs = await import('fs');
-              fs.appendFileSync('auth-error.log', String(e.stack || e) + '\n');
+              fs.appendFileSync('auth-error.log', String((e as any).stack || e) + '\n');
               return null;
             }
           },
@@ -303,6 +303,18 @@ import('../src/app/api/utils/automation-worker.js')
     startAutomationWorker(5 * 60 * 1000);
   })
   .catch((err) => console.error('[AutoWorker] Failed to start:', err.message));
+
+import('../src/bot/discord.js')
+  .then(({ startDiscordBot }) => {
+    startDiscordBot();
+  })
+  .catch((err) => console.error('[DiscordBot] Initial load error:', err.message));
+
+import('../src/bot/telegram.js')
+  .then(({ startTelegramBot }) => {
+    startTelegramBot();
+  })
+  .catch((err) => console.error('[TelegramBot] Initial load error:', err.message));
 
 export default await createHonoServer({
   app,

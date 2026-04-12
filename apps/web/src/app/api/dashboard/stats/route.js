@@ -13,10 +13,12 @@ export async function GET() {
     // Get counts for dashboard
     const statsQuery = sql`
       SELECT 
-        COUNT(*) FILTER (WHERE status = 'published') as uploaded_today, -- This should ideally be filtered by date, but for now we'll do total published
+        COUNT(*) FILTER (WHERE status = 'published' AND published_at >= CURRENT_DATE) as uploaded_today,
         COUNT(*) FILTER (WHERE status = 'scheduled') as scheduled,
         COUNT(*) FILTER (WHERE status = 'failed') as failed,
         COUNT(*) FILTER (WHERE status = 'pending_review') as drafts,
+        COUNT(*) FILTER (WHERE status = 'detected') as detected,
+        COUNT(*) FILTER (WHERE status IN ('queued', 'analyzing')) as queued,
         COUNT(*) as total_processed
       FROM videos 
       WHERE user_id = ${userId}
@@ -28,6 +30,8 @@ export async function GET() {
       scheduled: 0,
       failed: 0,
       drafts: 0,
+      detected: 0,
+      queued: 0,
       total_processed: 0,
     };
 
@@ -37,6 +41,8 @@ export async function GET() {
       scheduled: parseInt(stats.scheduled),
       failed: parseInt(stats.failed),
       drafts: parseInt(stats.drafts),
+      detected: parseInt(stats.detected),
+      queued: parseInt(stats.queued),
     });
   } catch (err) {
     console.error("Dashboard stats error:", err);

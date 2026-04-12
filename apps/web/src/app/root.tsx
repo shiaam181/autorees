@@ -450,7 +450,7 @@ export function Layout({ children }: { children: ReactNode }) {
       </head>
       <body suppressHydrationWarning>
         <ClientOnly loader={() => children} />
-        <Toaster position="top-center" theme="dark" richColors containerStyle={{ zIndex: 99999 }} toastOptions={{ style: { background: '#1a1a1a', border: '1px solid rgba(255,255,255,0.1)', color: '#fff', fontSize: '14px', borderRadius: '16px', padding: '16px 24px', boxShadow: '0 20px 60px rgba(0,0,0,0.5)' } }} />
+        <Toaster position="top-center" theme="dark" richColors style={{ zIndex: 99999 }} toastOptions={{ style: { background: '#1a1a1a', border: '1px solid rgba(255,255,255,0.1)', color: '#fff', fontSize: '14px', borderRadius: '16px', padding: '16px 24px', boxShadow: '0 20px 60px rgba(0,0,0,0.5)' } }} />
         <ScrollRestoration />
         <Scripts />
         <script src="https://kit.fontawesome.com/2c15cc0cc7.js" crossOrigin="anonymous" async />

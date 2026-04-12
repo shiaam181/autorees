@@ -20,9 +20,9 @@ export async function GET() {
     FROM videos v
     LEFT JOIN metadata_versions m ON m.video_id = v.id AND m.is_recommended = true
     WHERE v.user_id = ${session.user.id}
-      AND v.detected_at >= CURRENT_DATE
-    ORDER BY v.detected_at ASC
-    LIMIT ${dailyLimit}
+      AND v.status IN ('queued', 'analyzing', 'ready_for_review', 'scheduled', 'uploading', 'failed')
+    ORDER BY v.status ASC, v.queued_at ASC NULLS LAST
+    LIMIT 20
   `;
 
   const [publishedToday] = await sql`

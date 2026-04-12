@@ -1,0 +1,268 @@
+﻿bun.exe : $ react-router build && node -e "const fs = require('fs'); fs.mkdirSync('build/server/src/app', { recursive: 
+true }); fs.cpSync('src/app/api', 'build/server/src/app/api', { recursive: true }); 
+fs.rmSync('build/server/src/app/api/__create', { recursive: true, force: true });"
+At C:\Users\Administrator\AppData\Roaming\npm\bun.ps1:14 char:3
++   & "$basedir/node_modules/bun/bin/bun.exe"   $args
++   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: ($ react-router ...orce: true });":String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+[36mvite v6.4.2 [32mbuilding for production...[36m[39m
+transforming...
+[32mΓ£ô[39m 1756 modules transformed.
+rendering chunks...
+computing gzip size...
+[2mbuild/client/[22m[32m.vite/manifest.json                      [39m[1m[2m 12.40 kB[22m[1m[22m[2m Γöé gzip:  1.38 kB[22m
+[2mbuild/client/[22m[35massets/global-BXxHiPTN.css               [39m[1m[2m 34.68 kB[22m[1m[22m[2m Γöé gzip:  6.80 kB[22m
+[2mbuild/client/[22m[36massets/play-BVP8OGWw.js                  [39m[1m[2m  0.38 kB[22m[1m[22m[2m Γöé gzip:  0.31 kB[22m
+[2mbuild/client/[22m[36massets/plus-DncA1RKX.js                  [39m[1m[2m  0.40 kB[22m[1m[22m[2m Γöé gzip:  0.31 kB[22m
+[2mbuild/client/[22m[36massets/search-Bm3BRu2Z.js                [39m[1m[2m  0.42 kB[22m[1m[22m[2m Γöé gzip:  0.33 kB[22m
+[2mbuild/client/[22m[36massets/circle-check-BZbxVrF_.js          [39m[1m[2m  0.43 kB[22m[1m[22m[2m Γöé gzip:  0.33 kB[22m
+[2mbuild/client/[22m[36massets/clock-D4i5bjdY.js                 [39m[1m[2m  0.43 kB[22m[1m[22m[2m Γöé gzip:  0.34 kB[22m
+[2mbuild/client/[22m[36massets/circle-alert-EzmMUAw1.js          [39m[1m[2m  0.50 kB[22m[1m[22m[2m Γöé gzip:  0.35 kB[22m
+[2mbuild/client/[22m[36massets/external-link-BwUAiwR8.js         [39m[1m[2m  0.50 kB[22m[1m[22m[2m Γöé gzip:  0.36 kB[22m
+[2mbuild/client/[22m[36massets/file-video-BPlcY9iZ.js            [39m[1m[2m  0.52 kB[22m[1m[22m[2m Γöé gzip:  0.37 kB[22m
+[2mbuild/client/[22m[36massets/shield-CP1GsQqu.js                [39m[1m[2m  0.52 kB[22m[1m[22m[2m Γöé gzip:  0.40 kB[22m
+[2mbuild/client/[22m[36massets/file-pen-BJRzqZNu.js              [39m[1m[2m  0.53 kB[22m[1m[22m[2m Γöé gzip:  0.38 kB[22m
+[2mbuild/client/[22m[36massets/trash-2-Cud3-jNg.js               [39m[1m[2m  0.61 kB[22m[1m[22m[2m Γöé gzip:  0.42 kB[22m
+[2mbuild/client/[22m[36massets/sparkles-BHlG3EfO.js              [39m[1m[2m  0.67 kB[22m[1m[22m[2m Γöé gzip:  0.42 kB[22m
+[2mbuild/client/[22m[36massets/page-BnqVrI-4.js                  [39m[1m[2m  1.39 kB[22m[1m[22m[2m Γöé gzip:  0.68 kB[22m
+[2mbuild/client/[22m[36massets/useAuth-DZPtXMMU.js               [39m[1m[2m  1.39 kB[22m[1m[22m[2m Γöé gzip:  0.62 kB[22m
+[2mbuild/client/[22m[36massets/StatusBadge-zs9c5QvK.js           [39m[1m[2m  2.54 kB[22m[1m[22m[2m Γöé gzip:  1.03 kB[22m
+[2mbuild/client/[22m[36massets/useMutation-CKPQuBpz.js           [39m[1m[2m  2.75 kB[22m[1m[22m[2m Γöé gzip:  1.08 kB[22m
+[2mbuild/client/[22m[36massets/PolymorphicComponent-tA1gc903.js  [39m[1m[2m  3.80 kB[22m[1m[22m[2m Γöé gzip:  1.42 kB[22m
+[2mbuild/client/[22m[36massets/page-Dv2smQMj.js                  [39m[1m[2m  4.38 kB[22m[1m[22m[2m Γöé gzip:  1.81 kB[22m
+[2mbuild/client/[22m[36massets/page-BAV1y7tA.js                  [39m[1m[2m  4.39 kB[22m[1m[22m[2m Γöé gzip:  1.74 kB[22m
+[2mbuild/client/[22m[36massets/page-B1aED2uv.js                  [39m[1m[2m  4.60 kB[22m[1m[22m[2m Γöé gzip:  1.83 kB[22m
+[2mbuild/client/[22m[36massets/not-found-DFigTcxn.js             [39m[1m[2m  6.13 kB[22m[1m[22m[2m Γöé gzip:  2.21 kB[22m
+[2mbuild/client/[22m[36massets/entry.client-C6mPBqax.js          [39m[1m[2m  7.54 kB[22m[1m[22m[2m Γöé gzip:  2.73 kB[22m
+[2mbuild/client/[22m[36massets/react-B0dIELjv.js                 [39m[1m[2m  8.24 kB[22m[1m[22m[2m Γöé gzip:  3.03 kB[22m
+[2mbuild/client/[22m[36massets/page-C2mj48nx.js                  [39m[1m[2m  9.30 kB[22m[1m[22m[2m Γöé gzip:  2.81 kB[22m
+[2mbuild/client/[22m[36massets/page-BSUByb7L.js                  [39m[1m[2m  9.67 kB[22m[1m[22m[2m Γöé gzip:  2.82 kB[22m
+[2mbuild/client/[22m[36massets/page-Bb6GIw-f.js                  [39m[1m[2m 10.16 kB[22m[1m[22m[2m Γöé gzip:  3.25 kB[22m
+[2mbuild/client/[22m[36massets/useQuery-DFsAu8oS.js              [39m[1m[2m 10.62 kB[22m[1m[22m[2m Γöé gzip:  3.38 kB[22m
+[2mbuild/client/[22m[36massets/page-DO8cSVLD.js                  [39m[1m[2m 11.72 kB[22m[1m[22m[2m Γöé gzip:  3.34 kB[22m
+[2mbuild/client/[22m[36massets/page-BRETBYdf.js                  [39m[1m[2m 11.72 kB[22m[1m[22m[2m Γöé gzip:  3.45 kB[22m
+[2mbuild/client/[22m[36massets/page-knA1EvpP.js                  [39m[1m[2m 11.96 kB[22m[1m[22m[2m Γöé gzip:  3.82 kB[22m
+[2mbuild/client/[22m[36massets/page-BI0xh7ea.js                  [39m[1m[2m 12.55 kB[22m[1m[22m[2m Γöé gzip:  3.68 kB[22m
+[2mbuild/client/[22m[36massets/page-j-aLI_b_.js                  [39m[1m[2m 13.22 kB[22m[1m[22m[2m Γöé gzip:  3.95 kB[22m
+[2mbuild/client/[22m[36massets/page-cFCb8iLo.js                  [39m[1m[2m 18.81 kB[22m[1m[22m[2m Γöé gzip:  5.50 kB[22m
+[2mbuild/client/[22m[36massets/page-OxUcA3xM.js                  [39m[1m[2m 21.18 kB[22m[1m[22m[2m Γöé gzip:  5.38 kB[22m
+[2mbuild/client/[22m[36massets/index-LaYGNsF2.js                 [39m[1m[2m 33.71 kB[22m[1m[22m[2m Γöé gzip:  9.69 kB[22m
+[2mbuild/client/[22m[36massets/layout-tRw5-D4F.js                [39m[1m[2m 54.38 kB[22m[1m[22m[2m Γöé gzip: 14.42 kB[22m
+[2mbuild/client/[22m[36massets/root-B2o4oJpo.js                  [39m[1m[2m 78.32 kB[22m[1m[22m[2m Γöé gzip: 22.93 kB[22m
+[2mbuild/client/[22m[36massets/jsx-runtime-BTLIKcYq.js           [39m[1m[2m126.93 kB[22m[1m[22m[2m Γöé gzip: 42.63 kB[22m
+[2mbuild/client/[22m[36massets/index-BPTKJDLX.js                 [39m[1m[2m135.25 kB[22m[1m[22m[2m Γöé gzip: 43.41 kB[22m
+[32mΓ£ô built in 8.29s[39m
+[36mvite v6.4.2 [32mbuilding SSR bundle for production...[36m[39m
+transforming...
+[33msrc/app/__create/social-dev-shim/page.jsx?noLayout.jsx (1:0): Error when using sourcemap for reporting an error: 
+Can't resolve original location of error.[39m
+[32mΓ£ô[39m 85 modules transformed.
+[31mΓ£ù[39m Build failed in 1.84s
+[31msrc/bot/discord.js (3:9): "runPipeline" is not exported by "src/app/api/utils/automation-worker.js", imported by 
+"src/bot/discord.js".[39m
+file: [36mC:/Users/Administrator/Downloads/autorees/apps/web/src/bot/discord.js:3:9[39m
+[33m
+1: import { Client, GatewayIntentBits, EmbedBuilder } from 'discord.js';
+2: import sql from '../app/api/utils/sql.js';
+3: import { runPipeline } from '../app/api/utils/automation-worker.js';
+            ^
+4: 
+5: let client = null;
+[39m
+    at getRollupError 
+(file:///C:/Users/Administrator/Downloads/autorees/apps/web/node_modules/rollup/dist/es/shared/parseAst.js:406:41)
+    at error 
+(file:///C:/Users/Administrator/Downloads/autorees/apps/web/node_modules/rollup/dist/es/shared/parseAst.js:402:42)
+    at Module.error 
+(file:///C:/Users/Administrator/Downloads/autorees/apps/web/node_modules/rollup/dist/es/shared/node-entry.js:17380:16)
+    at Module.traceVariable 
+(file:///C:/Users/Administrator/Downloads/autorees/apps/web/node_modules/rollup/dist/es/shared/node-entry.js:17813:29)
+    at ModuleScope.findVariable 
+(file:///C:/Users/Administrator/Downloads/autorees/apps/web/node_modules/rollup/dist/es/shared/node-entry.js:15403:39)
+    at FunctionScope.findVariable 
+(file:///C:/Users/Administrator/Downloads/autorees/apps/web/node_modules/rollup/dist/es/shared/node-entry.js:5676:38)
+    at FunctionBodyScope.findVariable 
+(file:///C:/Users/Administrator/Downloads/autorees/apps/web/node_modules/rollup/dist/es/shared/node-entry.js:5676:38)
+    at ReturnValueScope.findVariable 
+(file:///C:/Users/Administrator/Downloads/autorees/apps/web/node_modules/rollup/dist/es/shared/node-entry.js:5676:38)
+    at FunctionBodyScope.findVariable 
+(file:///C:/Users/Administrator/Downloads/autorees/apps/web/node_modules/rollup/dist/es/shared/node-entry.js:5676:38)
+    at TrackingScope.findVariable 
+(file:///C:/Users/Administrator/Downloads/autorees/apps/web/node_modules/rollup/dist/es/shared/node-entry.js:5676:38)
+    at BlockScope.findVariable 
+(file:///C:/Users/Administrator/Downloads/autorees/apps/web/node_modules/rollup/dist/es/shared/node-entry.js:5676:38)
+    at Identifier.bind 
+(file:///C:/Users/Administrator/Downloads/autorees/apps/web/node_modules/rollup/dist/es/shared/node-entry.js:5450:40)
+    at CallExpression.bind 
+(file:///C:/Users/Administrator/Downloads/autorees/apps/web/node_modules/rollup/dist/es/shared/node-entry.js:2832:23)
+    at CallExpression.bind 
+(file:///C:/Users/Administrator/Downloads/autorees/apps/web/node_modules/rollup/dist/es/shared/node-entry.js:12512:15)
+    at MemberExpression.bind 
+(file:///C:/Users/Administrator/Downloads/autorees/apps/web/node_modules/rollup/dist/es/shared/node-entry.js:2832:23)
+    at MemberExpression.bind 
+(file:///C:/Users/Administrator/Downloads/autorees/apps/web/node_modules/rollup/dist/es/shared/node-entry.js:7410:19)
+    at CallExpression.bind 
+(file:///C:/Users/Administrator/Downloads/autorees/apps/web/node_modules/rollup/dist/es/shared/node-entry.js:2832:23)
+    at CallExpression.bind 
+(file:///C:/Users/Administrator/Downloads/autorees/apps/web/node_modules/rollup/dist/es/shared/node-entry.js:12512:15)
+    at ExpressionStatement.bind 
+(file:///C:/Users/Administrator/Downloads/autorees/apps/web/node_modules/rollup/dist/es/shared/node-entry.js:2832:23)
+    at BlockStatement.bind 
+(file:///C:/Users/Administrator/Downloads/autorees/apps/web/node_modules/rollup/dist/es/shared/node-entry.js:2828:28)
+    at IfStatement.bind 
+(file:///C:/Users/Administrator/Downloads/autorees/apps/web/node_modules/rollup/dist/es/shared/node-entry.js:2832:23)
+    at BlockStatement.bind 
+(file:///C:/Users/Administrator/Downloads/autorees/apps/web/node_modules/rollup/dist/es/shared/node-entry.js:2828:28)
+    at ArrowFunctionExpression.bind 
+(file:///C:/Users/Administrator/Downloads/autorees/apps/web/node_modules/rollup/dist/es/shared/node-entry.js:2832:23)
+    at CallExpression.bind 
+(file:///C:/Users/Administrator/Downloads/autorees/apps/web/node_modules/rollup/dist/es/shared/node-entry.js:2828:28)
+    at CallExpression.bind 
+(file:///C:/Users/Administrator/Downloads/autorees/apps/web/node_modules/rollup/dist/es/shared/node-entry.js:12512:15)
+    at ExpressionStatement.bind 
+(file:///C:/Users/Administrator/Downloads/autorees/apps/web/node_modules/rollup/dist/es/shared/node-entry.js:2832:23)
+    at BlockStatement.bind 
+(file:///C:/Users/Administrator/Downloads/autorees/apps/web/node_modules/rollup/dist/es/shared/node-entry.js:2828:28)
+    at FunctionDeclaration.bind 
+(file:///C:/Users/Administrator/Downloads/autorees/apps/web/node_modules/rollup/dist/es/shared/node-entry.js:2832:23)
+    at ExportNamedDeclaration.bind 
+(file:///C:/Users/Administrator/Downloads/autorees/apps/web/node_modules/rollup/dist/es/shared/node-entry.js:13035:27)
+    at Program.bind 
+(file:///C:/Users/Administrator/Downloads/autorees/apps/web/node_modules/rollup/dist/es/shared/node-entry.js:2828:28)
+    at Module.bindReferences 
+(file:///C:/Users/Administrator/Downloads/autorees/apps/web/node_modules/rollup/dist/es/shared/node-entry.js:17359:18)
+    at Graph.sortAndBindModules 
+(file:///C:/Users/Administrator/Downloads/autorees/apps/web/node_modules/rollup/dist/es/shared/node-entry.js:23262:20)
+    at Graph.build 
+(file:///C:/Users/Administrator/Downloads/autorees/apps/web/node_modules/rollup/dist/es/shared/node-entry.js:23160:14)
+    at 
+file:///C:/Users/Administrator/Downloads/autorees/apps/web/node_modules/rollup/dist/es/shared/node-entry.js:23851:13
+    at catchUnfinishedHookActions 
+(file:///C:/Users/Administrator/Downloads/autorees/apps/web/node_modules/rollup/dist/es/shared/node-entry.js:23321:16)
+    at rollupInternal 
+(file:///C:/Users/Administrator/Downloads/autorees/apps/web/node_modules/rollup/dist/es/shared/node-entry.js:23846:5)
+    at buildEnvironment (file:///C:/Users/Administrator/Downloads/autorees/apps/web/node_modules/vite/dist/node/chunks/
+dep-Dq2t6Dq0.js:46260:14)
+    at buildEnvironment 
+(C:\Users\Administrator\Downloads\autorees\apps\web\node_modules\@react-router\dev\dist\cli\index.js:2066:5)
+    at async Promise.all (index 0)
+    at viteBuild 
+(C:\Users\Administrator\Downloads\autorees\apps\web\node_modules\@react-router\dev\dist\cli\index.js:2102:3)
+    at build 
+(C:\Users\Administrator\Downloads\autorees\apps\web\node_modules\@react-router\dev\dist\cli\index.js:1963:10)
+    at build2 
+(C:\Users\Administrator\Downloads\autorees\apps\web\node_modules\@react-router\dev\dist\cli\index.js:2301:5)
+    at run2 
+(C:\Users\Administrator\Downloads\autorees\apps\web\node_modules\@react-router\dev\dist\cli\index.js:2632:7) {
+  binding: 'runPipeline',
+  code: 'MISSING_EXPORT',
+  exporter: 'C:/Users/Administrator/Downloads/autorees/apps/web/src/app/api/utils/automation-worker.js',
+  id: 'C:/Users/Administrator/Downloads/autorees/apps/web/src/bot/discord.js',
+  url: 'https://rollupjs.org/troubleshooting/#error-name-is-not-exported-by-module',
+  pos: 122,
+  loc: {
+    column: 9,
+    file: 'C:/Users/Administrator/Downloads/autorees/apps/web/src/bot/discord.js',
+    line: 3
+  },
+  frame: "1: import { Client, GatewayIntentBits, EmbedBuilder } from 'discord.js';\n" +
+    "2: import sql from '../app/api/utils/sql.js';\n" +
+    "3: import { runPipeline } from '../app/api/utils/automation-worker.js';\n" +
+    '            ^\n' +
+    '4: \n' +
+    '5: let client = null;',
+  watchFiles: [
+    'C:\\Users\\Administrator\\Downloads\\autorees\\apps\\web\\package.json',
+    'C:/Users/Administrator/Downloads/autorees/apps/web/__create/index.ts',
+    'C:/Users/Administrator/Downloads/autorees/apps/web/__create/adapter.ts',
+    'C:/Users/Administrator/Downloads/autorees/apps/web/__create/get-html-for-error-page.ts',
+    'C:/Users/Administrator/Downloads/autorees/apps/web/__create/is-auth-action.ts',
+    'C:/Users/Administrator/Downloads/autorees/apps/web/__create/route-builder.ts',
+    'C:/Users/Administrator/Downloads/autorees/apps/web/src/app/api/utils/automation-worker.js',
+    'C:/Users/Administrator/Downloads/autorees/apps/web/src/bot/discord.js',
+    'C:/Users/Administrator/Downloads/autorees/apps/web/src/bot/telegram.js',
+    'C:/Users/Administrator/Downloads/autorees/apps/web/src/app/api/utils/google-client.js',
+    'C:/Users/Administrator/Downloads/autorees/apps/web/src/app/api/utils/sql.js',
+    'C:/Users/Administrator/Downloads/autorees/apps/web/src/app/api/utils/duplicate-detector.js',
+    'C:/Users/Administrator/Downloads/autorees/apps/web/src/app/api/utils/get-gemini-key.js',
+    'C:/Users/Administrator/Downloads/autorees/apps/web/node_modules/react-router-hono-server/dist/adapters/bun.js',
+    'C:/Users/Administrator/Downloads/autorees/apps/web/node_modules/react-router-hono-server/dist/chunk-YI5FED4X.js',
+    'C:/Users/Administrator/Downloads/autorees/apps/web/node_modules/react-router-hono-server/dist/chunk-BH64OQMW.js',
+    'C:/Users/Administrator/Downloads/autorees/apps/web/src/app/api/__create/check-social-secrets/route.js',
+    'C:/Users/Administrator/Downloads/autorees/apps/web/src/app/api/auth/google/callback/route.js',
+    'C:/Users/Administrator/Downloads/autorees/apps/web/src/app/api/__create/ssr-test/route.js',
+    'C:/Users/Administrator/Downloads/autorees/apps/web/src/app/api/auth/expo-web-success/route.js',
+    'C:/Users/Administrator/Downloads/autorees/apps/web/src/app/api/auth/google/debug/route.js',
+    'C:/Users/Administrator/Downloads/autorees/apps/web/src/app/api/api-keys/route.js',
+    'C:/Users/Administrator/Downloads/autorees/apps/web/src/app/api/auth/google/disconnect/route.js',
+    'C:/Users/Administrator/Downloads/autorees/apps/web/src/app/api/auth/google/status/route.js',
+    'C:/Users/Administrator/Downloads/autorees/apps/web/src/app/api/auth/google/route.js',
+    'C:/Users/Administrator/Downloads/autorees/apps/web/src/app/api/dashboard/stats/route.js',
+    'C:/Users/Administrator/Downloads/autorees/apps/web/src/app/api/auth/token/route.js',
+    'C:/Users/Administrator/Downloads/autorees/apps/web/src/app/api/drive/folders/route.js',
+    'C:/Users/Administrator/Downloads/autorees/apps/web/src/app/api/drive/scan/[id]/route.js',
+    'C:/Users/Administrator/Downloads/autorees/apps/web/src/app/api/metadata/generate/[id]/route.js',
+    'C:/Users/Administrator/Downloads/autorees/apps/web/src/app/api/videos/history/route.js',
+    'C:/Users/Administrator/Downloads/autorees/apps/web/src/app/api/settings/route.js',
+    'C:/Users/Administrator/Downloads/autorees/apps/web/src/app/api/videos/pipeline/route.js',
+    'C:/Users/Administrator/Downloads/autorees/apps/web/src/app/api/videos/metadata/[id]/route.js',
+    'C:/Users/Administrator/Downloads/autorees/apps/web/src/app/api/videos/metadata/save/route.js',
+    'C:/Users/Administrator/Downloads/autorees/apps/web/src/app/api/videos/publish/[id]/route.js',
+    'C:/Users/Administrator/Downloads/autorees/apps/web/src/app/api/videos/retry/[id]/route.js',
+    'C:/Users/Administrator/Downloads/autorees/apps/web/src/app/api/videos/queue/route.js',
+    'C:/Users/Administrator/Downloads/autorees/apps/web/src/app/api/videos/schedule/[id]/route.js',
+    'C:/Users/Administrator/Downloads/autorees/apps/web/src/app/api/videos/stream/[id]/route.js',
+    'C:/Users/Administrator/Downloads/autorees/apps/web/src/__create/fetch.ts',
+    'C:/Users/Administrator/Downloads/autorees/apps/web/src/app/routes.ts',
+    'C:/Users/Administrator/Downloads/autorees/apps/web/src/auth.js',
+    'C:/Users/Administrator/Downloads/autorees/apps/web/src/app/account/logout/page.jsx',
+    'C:\\Users\\Administrator\\Downloads\\autorees\\apps\\web\\src\\app\\layout.jsx',
+    'C:/Users/Administrator/Downloads/autorees/apps/web/node_modules/@react-router/dev/dist/config/defaults/entry.serve
+r.node.tsx',
+    'C:/Users/Administrator/Downloads/autorees/apps/web/src/app/page.jsx',
+    'C:/Users/Administrator/Downloads/autorees/apps/web/src/app/account/signin/page.jsx',
+    'C:/Users/Administrator/Downloads/autorees/apps/web/src/app/root.tsx',
+    'C:/Users/Administrator/Downloads/autorees/apps/web/src/app/account/signup/page.jsx',
+    'C:/Users/Administrator/Downloads/autorees/apps/web/src/app/accounts/page.jsx',
+    'C:/Users/Administrator/Downloads/autorees/apps/web/src/app/api-keys/page.jsx',
+    'C:/Users/Administrator/Downloads/autorees/apps/web/src/app/history/page.jsx',
+    'C:/Users/Administrator/Downloads/autorees/apps/web/src/app/drive/page.jsx',
+    'C:/Users/Administrator/Downloads/autorees/apps/web/src/app/pipeline/page.jsx',
+    'C:/Users/Administrator/Downloads/autorees/apps/web/src/app/queue/page.jsx',
+    'C:/Users/Administrator/Downloads/autorees/apps/web/src/app/privacy/page.jsx',
+    'C:/Users/Administrator/Downloads/autorees/apps/web/src/app/terms/page.jsx',
+    'C:/Users/Administrator/Downloads/autorees/apps/web/src/app/__create/social-dev-shim/page.jsx',
+    'C:/Users/Administrator/Downloads/autorees/apps/web/src/app/settings/page.jsx',
+    'C:/Users/Administrator/Downloads/autorees/apps/web/src/app/__create/not-found.tsx',
+    'C:/Users/Administrator/Downloads/autorees/apps/web/src/__create/@auth/create.js',
+    'C:/Users/Administrator/Downloads/autorees/apps/web/src/app/layout.jsx',
+    'C:/Users/Administrator/Downloads/autorees/apps/web/src/__create/PolymorphicComponent.tsx',
+    'C:/Users/Administrator/Downloads/autorees/apps/web/src/__create/useDevServerHeartbeat.ts',
+    'C:/Users/Administrator/Downloads/autorees/apps/web/src/app/global.css',
+    'C:/Users/Administrator/Downloads/autorees/apps/web/src/app/api/utils/create.js',
+    'C:/Users/Administrator/Downloads/autorees/apps/web/src/app/api/utils/upload.js',
+    'C:/Users/Administrator/Downloads/autorees/apps/web/src/client-integrations/pdfjs.js',
+    'C:/Users/Administrator/Downloads/autorees/apps/web/src/utils/create.js',
+    'C:/Users/Administrator/Downloads/autorees/apps/web/src/utils/useAuth.js',
+    'C:/Users/Administrator/Downloads/autorees/apps/web/src/utils/useHandleStreamResponse.js',
+    'C:/Users/Administrator/Downloads/autorees/apps/web/src/utils/useUpload.js',
+    'C:/Users/Administrator/Downloads/autorees/apps/web/src/utils/useUser.js',
+    'C:/Users/Administrator/Downloads/autorees/apps/web/src/__create/dev-error-overlay.js',
+    'C:/Users/Administrator/Downloads/autorees/apps/web/src/app/api/vitest.config.ts',
+    'C:/Users/Administrator/Downloads/autorees/apps/web/src/client.d.ts',
+    'C:/Users/Administrator/Downloads/autorees/apps/web/src/global.d.ts',
+    'C:/Users/Administrator/Downloads/autorees/apps/web/src/__create/stripe.ts',
+    'C:/Users/Administrator/Downloads/autorees/apps/web/src/client-integrations/chakra-ui.jsx',
+    'C:/Users/Administrator/Downloads/autorees/apps/web/src/client-integrations/react-google-maps.jsx',
+    'C:/Users/Administrator/Downloads/autorees/apps/web/src/client-integrations/react-markdown.jsx',
+    'C:/Users/Administrator/Downloads/autorees/apps/web/src/client-integrations/recharts.jsx',
+    'C:/Users/Administrator/Downloads/autorees/apps/web/src/client-integrations/shadcn-ui.jsx',
+    'C:/Users/Administrator/Downloads/autorees/apps/web/src/components/StatusBadge.jsx',
+    'C:/Users/Administrator/Downloads/autorees/apps/web/src/app/entry.client.tsx',
+    'C:/Users/Administrator/Downloads/autorees/apps/web/tailwind.config.js'
+  ],
+  Symbol(augmented): true
+}
+error: script "build" exited with code 1

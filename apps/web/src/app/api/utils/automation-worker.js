@@ -20,11 +20,12 @@ export function stopAutomationWorker() {
   }
 }
 
-async function runPipeline() {
+export async function runPipeline() {
   if (isRunning) return;
   isRunning = true;
   try {
     await scanAllFolders();
+    await queueDailyVideos();
     await generateMetadataForPending();
     await autoPublishReady();
   } catch (err) {
@@ -35,7 +36,7 @@ async function runPipeline() {
 }
 
 async function autoPublishReady() {
-  const users = await sql`SELECT DISTINCT user_id FROM videos WHERE status IN ('ready_for_review', 'detected') LIMIT 50`;
+  const users = await sql`SELECT DISTINCT user_id FROM videos WHERE status IN ('ready_for_review') LIMIT 50`;
   for (const { user_id } of users) {
     const [settings] = await sql`
       SELECT auto_publish, review_required, daily_upload_limit, upload_interval_hours 
@@ -65,21 +66,9 @@ async function scanAllFolders() {
       }
 
       const [settings] = await sql`
-        SELECT review_required, auto_publish, daily_upload_limit FROM user_settings WHERE user_id = ${source.user_id} LIMIT 1
+        SELECT daily_upload_limit FROM user_settings WHERE user_id = ${source.user_id} LIMIT 1
       `;
-      const reviewRequired = settings?.review_required ?? true;
-      const autoPublish = settings?.auto_publish ?? false;
       const dailyLimit = settings?.daily_upload_limit ?? 5;
-
-      const [todayCount] = await sql`
-        SELECT COUNT(*)::int as cnt FROM videos
-        WHERE user_id = ${source.user_id}
-          AND detected_at >= CURRENT_DATE
-      `;
-      const remainingSlots = Math.max(0, dailyLimit - (todayCount?.cnt || 0));
-      if (remainingSlots <= 0) {
-        continue;
-      }
 
       const driveResponse = await fetch(
         `https://www.googleapis.com/drive/v3/files?q='${source.folder_id}'+in+parents+and+mimeType+contains+'video/'&fields=files(id,name,size,mimeType,videoMediaMetadata,createdTime)&pageSize=100`,
@@ -93,8 +82,6 @@ async function scanAllFolders() {
       let detectedCount = 0;
 
       for (const file of files) {
-        if (detectedCount >= remainingSlots) break;
-
         const videoMeta = file.videoMediaMetadata || {};
         const width = videoMeta.width || 0;
         const height = videoMeta.height || 0;
@@ -104,10 +91,7 @@ async function scanAllFolders() {
         const dupCheck = await findDuplicateVideo(source.user_id, file.id, contentHash);
         if (dupCheck.duplicate) continue;
 
-        const isVertical = height > width;
-        const isShortDuration = duration > 0 && duration <= 60;
-        const isIdealShort = isVertical && isShortDuration;
-        const initialStatus = (!reviewRequired && autoPublish) ? "detected" : (reviewRequired || !isIdealShort ? "pending_review" : "detected");
+        const initialStatus = "detected";
 
         const [video] = await sql`
           INSERT INTO videos (user_id, drive_source_id, drive_file_id, filename, file_size, duration, width, height, mime_type, status, content_hash, detected_at)
@@ -120,7 +104,7 @@ async function scanAllFolders() {
           detectedCount++;
           await sql`
             INSERT INTO upload_logs (user_id, video_id, action, message, details)
-            VALUES (${source.user_id}, ${video.id}, 'video_detected', 'Auto-detected from Drive', ${JSON.stringify({ drive_file_id: file.id, is_ideal_short: isIdealShort })})
+            VALUES (${source.user_id}, ${video.id}, 'video_detected', 'Auto-detected from Drive', ${JSON.stringify({ drive_file_id: file.id })})
           `;
         }
       }
@@ -139,9 +123,75 @@ async function scanAllFolders() {
       }
 
       await sql`UPDATE drive_sources SET last_scanned_at = CURRENT_TIMESTAMP WHERE id = ${source.id}`;
-      if (detectedCount > 0) console.log(`[AutoWorker] Scanned folder ${source.folder_name || source.folder_id}: ${detectedCount} new videos (daily: ${(todayCount?.cnt || 0) + detectedCount}/${dailyLimit})`);
+      if (detectedCount > 0) console.log(`[AutoWorker] Scanned folder ${source.folder_name || source.folder_id}: ${detectedCount} new videos detected`);
     } catch (err) {
       console.error(`[AutoWorker] Scan error for source ${source.id}:`, err.message);
+    }
+  }
+}
+
+async function queueDailyVideos() {
+  const users = await sql`SELECT DISTINCT user_id FROM videos WHERE status = 'detected'`;
+  for (const { user_id } of users) {
+    try {
+      const [settings] = await sql`
+        SELECT daily_upload_limit, is_premium, premium_expires_at FROM user_settings WHERE user_id = ${user_id} LIMIT 1
+      `;
+      const dailyLimit = settings?.daily_upload_limit ?? 5;
+      const isPremium = settings?.is_premium;
+      const premiumExpires = settings?.premium_expires_at;
+      
+      const isPremiumActive = isPremium && (!premiumExpires || new Date(premiumExpires) > new Date());
+
+      if (isPremiumActive) {
+        const videosToQueue = await sql`
+          SELECT id FROM videos
+          WHERE user_id = ${user_id} AND status = 'detected'
+          ORDER BY detected_at ASC
+        `;
+
+        if (videosToQueue.length > 0) {
+          const ids = videosToQueue.map(v => v.id);
+          await sql`
+            UPDATE videos 
+            SET status = 'queued', queued_at = CURRENT_TIMESTAMP
+            WHERE id IN ${sql(ids)}
+          `;
+          console.log(`[AutoWorker] (PREMIUM) Queued ${videosToQueue.length} videos for user ${user_id}`);
+        }
+      } else {
+        const [usedToday] = await sql`
+          SELECT COUNT(*)::int as cnt FROM videos
+          WHERE user_id = ${user_id} 
+          AND (
+            (status IN ('published', 'uploading', 'failed') AND published_at >= CURRENT_DATE)
+            OR 
+            (status IN ('queued', 'analyzing', 'ready_for_review', 'scheduled') AND queued_at >= CURRENT_DATE)
+          )
+        `;
+        const remainingLimit = Math.max(0, dailyLimit - (usedToday?.cnt || 0));
+
+        if (remainingLimit > 0) {
+          const videosToQueue = await sql`
+            SELECT id FROM videos
+            WHERE user_id = ${user_id} AND status = 'detected'
+            ORDER BY detected_at ASC
+            LIMIT ${remainingLimit}
+          `;
+
+          if (videosToQueue.length > 0) {
+            const ids = videosToQueue.map(v => v.id);
+            await sql`
+              UPDATE videos 
+              SET status = 'queued', queued_at = CURRENT_TIMESTAMP
+              WHERE id IN ${sql(ids)}
+            `;
+            console.log(`[AutoWorker] Queued ${videosToQueue.length} videos for user ${user_id}`);
+          }
+        }
+      }
+    } catch (err) {
+      console.error(`[AutoWorker] Queueing error for user ${user_id}:`, err.message);
     }
   }
 }
@@ -151,8 +201,8 @@ async function generateMetadataForPending() {
     SELECT v.*, ds.folder_name
     FROM videos v
     LEFT JOIN drive_sources ds ON v.drive_source_id = ds.id
-    WHERE v.status = 'detected'
-    ORDER BY v.detected_at ASC
+    WHERE v.status = 'queued'
+    ORDER BY v.queued_at ASC
     LIMIT 5
   `;
 
@@ -194,9 +244,9 @@ Respond ONLY in JSON format (no markdown code blocks):
 }`;
 
       const { callGeminiWithRotation } = await import("./get-gemini-key.js");
-      const aiData = await callGeminiWithRotation(video.user_id, prompt);
+      const { provider, result: contentRaw } = await callGeminiWithRotation(video.user_id, prompt);
 
-      let content = (aiData.candidates?.[0]?.content?.parts?.[0]?.text || "").trim();
+      let content = contentRaw.trim();
       const jsonMatch = content.match(/\{[\s\S]*\}/);
       if (jsonMatch) content = jsonMatch[0];
       const result = JSON.parse(content);
@@ -206,8 +256,11 @@ Respond ONLY in JSON format (no markdown code blocks):
         VALUES (${video.id}, ${result.recommended_title}, ${result.recommended_description}, ${result.recommended_hashtags}, true, ${result.confidence_score || 0.5}, ${result.notes || "AI generated"})
       `;
 
-      const newStatus = (result.confidence_score || 0) >= 0.7 ? "ready_for_review" : "pending_review";
-      await sql`UPDATE videos SET status = ${newStatus} WHERE id = ${video.id}`;
+      const [settings] = await sql`SELECT review_required FROM user_settings WHERE user_id = ${video.user_id} LIMIT 1`;
+      const reviewRequired = settings?.review_required ?? true;
+      const newStatus = (!reviewRequired && (result.confidence_score || 0) >= 0.7) ? "ready_for_review" : "pending_review";
+      
+      await sql`UPDATE videos SET status = ${newStatus}, api_provider_used = ${provider} WHERE id = ${video.id}`;
 
       await sql`
         INSERT INTO upload_logs (user_id, video_id, action, message, details)

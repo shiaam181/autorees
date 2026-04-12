@@ -48,3 +48,20 @@ export async function POST(request) {
     return Response.json({ error: "Failed to add source" }, { status: 500 });
   }
 }
+
+export async function DELETE(request) {
+  const session = await auth();
+  if (!session || !session.user?.id)
+    return Response.json({ error: "Unauthorized" }, { status: 401 });
+
+  const { id } = await request.json();
+  if (!id)
+    return Response.json({ error: "Missing folder id" }, { status: 400 });
+
+  try {
+    await sql`DELETE FROM drive_sources WHERE id = ${id} AND user_id = ${session.user.id}`;
+    return Response.json({ success: true });
+  } catch (err) {
+    return Response.json({ error: "Failed to delete source" }, { status: 500 });
+  }
+}

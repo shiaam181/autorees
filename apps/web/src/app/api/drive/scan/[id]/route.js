@@ -28,13 +28,7 @@ export async function POST(req, { params }) {
     const reviewRequired = settings?.review_required ?? true;
     const dailyLimit = settings?.daily_upload_limit ?? 5;
 
-    const [todayCount] = await sql`
-      SELECT COUNT(*)::int as cnt FROM videos
-      WHERE user_id = ${session.user.id}
-        AND detected_at >= CURRENT_DATE
-        AND status NOT IN ('published', 'failed')
-    `;
-    const remainingSlots = Math.max(0, dailyLimit - (todayCount?.cnt || 0));
+    const remainingSlots = dailyLimit; // Used only for message now
 
     // Get Google Drive access token
     let accessToken;
@@ -81,19 +75,18 @@ export async function POST(req, { params }) {
     let duplicateCount = 0;
     const results = [];
 
-    if (remainingSlots <= 0) {
+    if (files.length === 0) {
       return Response.json({
-        message: `Daily limit of ${dailyLimit} videos reached. No new videos scanned today.`,
+        message: `No video files found in this Drive folder.`,
         count: 0,
         duplicates: 0,
-        total: files.length,
+        total: 0,
         daily_limit: dailyLimit,
         videos: [],
       });
     }
 
     for (const file of files) {
-      if (detectedCount >= remainingSlots) break;
       const videoMeta = file.videoMediaMetadata || {};
       const width = videoMeta.width || 0;
       const height = videoMeta.height || 0;
@@ -131,10 +124,8 @@ export async function POST(req, { params }) {
       const isShortDuration = duration > 0 && duration <= 60;
       const isIdealShort = isVertical && isShortDuration;
 
-      // If review required OR video is not ideal, mark as pending_review
-      // Otherwise mark as detected (ready for automatic processing)
-      const initialStatus =
-        reviewRequired || !isIdealShort ? "pending_review" : "detected";
+      // Mark ALL incoming files strictly as `detected` first so they enter the queue pipeline
+      const initialStatus = "detected";
 
       // Insert video
       const [video] = await sql`
@@ -178,12 +169,12 @@ export async function POST(req, { params }) {
     await sql`UPDATE drive_sources SET last_scanned_at = CURRENT_TIMESTAMP WHERE id = ${id}`;
 
     return Response.json({
-      message: `Detected ${detectedCount} new videos (${duplicateCount} duplicates skipped). Daily limit: ${detectedCount + (todayCount?.cnt || 0)}/${dailyLimit}`,
+      message: `Detected ${detectedCount} new videos in this scan (${duplicateCount} duplicates skipped).`,
       count: detectedCount,
       duplicates: duplicateCount,
       total: files.length,
       daily_limit: dailyLimit,
-      daily_used: detectedCount + (todayCount?.cnt || 0),
+      daily_used: 0,
       videos: results,
     });
   } catch (err) {

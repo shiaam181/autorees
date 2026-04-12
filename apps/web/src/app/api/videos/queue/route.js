@@ -13,11 +13,12 @@ export async function GET() {
   const dailyLimit = settings?.daily_upload_limit ?? 5;
 
   const videos = await sql`
-    SELECT * FROM videos 
-    WHERE user_id = ${session.user.id} 
-      AND status IN ('pending_review', 'ready_for_review', 'detected')
-    ORDER BY detected_at ASC
-    LIMIT ${dailyLimit}
+    SELECT v.*, m.title as meta_title, m.description as meta_description
+    FROM videos v
+    LEFT JOIN metadata_versions m ON m.video_id = v.id AND m.is_recommended = true
+    WHERE v.user_id = ${session.user.id} 
+      AND v.status IN ('queued', 'analyzing', 'pending_review', 'ready_for_review')
+    ORDER BY v.queued_at ASC NULLS LAST, v.detected_at ASC
   `;
   return Response.json(videos);
 }

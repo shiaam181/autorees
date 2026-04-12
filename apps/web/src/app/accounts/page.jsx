@@ -9,7 +9,8 @@ import {
   XCircle,
   LogIn,
 } from "lucide-react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { toast } from "sonner";
 import useUser from "@/utils/useUser";
 
 const AccountCard = ({
@@ -18,6 +19,8 @@ const AccountCard = ({
   label,
   status,
   onConnect,
+  onDisconnect,
+  isDisconnecting,
   scope,
 }) => (
   <div
@@ -55,9 +58,19 @@ const AccountCard = ({
     </p>
 
     {status === "connected" ? (
-      <div className="flex items-center gap-2 text-green-500 bg-green-500/5 py-3 px-4 rounded-xl border border-green-500/10">
-        <CheckCircle2 size={18} />
-        <span className="font-semibold text-sm">Active Connection</span>
+      <div className="flex items-center gap-2">
+        <div className="flex-1 flex items-center gap-2 text-green-500 bg-green-500/5 py-3 px-4 rounded-xl border border-green-500/10">
+          <CheckCircle2 size={18} />
+          <span className="font-semibold text-sm">Active Connection</span>
+        </div>
+        <button
+          onClick={onDisconnect}
+          disabled={isDisconnecting}
+          className="px-4 py-3 rounded-xl border border-red-500/20 text-red-400 hover:bg-red-500/10 hover:text-red-300 transition-all text-sm font-semibold disabled:opacity-50 flex items-center gap-1.5"
+        >
+          <XCircle size={16} />
+          {isDisconnecting ? "..." : "Disconnect"}
+        </button>
       </div>
     ) : (
       <button
@@ -113,6 +126,24 @@ export default function AccountsPage() {
       }
     }, 500);
   };
+
+  const queryClient = useQueryClient();
+  const disconnectMutation = useMutation({
+    mutationFn: async (provider) => {
+      const res = await fetch("/api/auth/google/disconnect", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ provider }),
+      });
+      if (!res.ok) throw new Error("Failed to disconnect");
+      return res.json();
+    },
+    onSuccess: () => {
+      toast.success("Account disconnected");
+      queryClient.invalidateQueries(["connected-accounts"]);
+    },
+    onError: () => toast.error("Failed to disconnect"),
+  });
 
   // Show login prompt if not authenticated
   if (userLoading) {
@@ -196,6 +227,8 @@ export default function AccountsPage() {
             icon={FolderSearch}
             status={driveStatus}
             onConnect={handleConnect}
+            onDisconnect={() => disconnectMutation.mutate("google_drive")}
+            isDisconnecting={disconnectMutation.isPending}
           />
           <AccountCard
             provider="youtube"
@@ -204,6 +237,8 @@ export default function AccountsPage() {
             icon={Youtube}
             status={youtubeStatus}
             onConnect={handleConnect}
+            onDisconnect={() => disconnectMutation.mutate("youtube")}
+            isDisconnecting={disconnectMutation.isPending}
           />
         </div>
       )}

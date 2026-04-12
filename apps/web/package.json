@@ -4,8 +4,8 @@
         "type": "module",
         "scripts": {
                 "dev": "react-router dev",
-                "build": "react-router build && mkdir -p build/server/src/app && cp -r src/app/api build/server/src/app/api",
-                "start": "bun build/server/index.js",
+                "build": "react-router build && node -e \"const fs = require('fs'); fs.mkdirSync('build/server/src/app', { recursive: true }); fs.cpSync('src/app/api', 'build/server/src/app/api', { recursive: true }); fs.rmSync('build/server/src/app/api/__create', { recursive: true, force: true });\"",
+                "start": "bun --env-file=.env build/server/index.js",
                 "typecheck": "react-router typegen && tsc --noEmit"
         },
         "dependencies": {
@@ -34,12 +34,14 @@
                 "cmdk": "^1.1.1",
                 "color2k": "^2.0.3",
                 "date-fns": "^4.1.0",
+                "discord.js": "^14.26.2",
                 "downshift": "^9.0.9",
                 "html-to-image": "^1.11.13",
                 "isbot": "^5.1.27",
                 "lodash-es": "^4.18.0",
                 "lucide-react": "0.358.0",
                 "motion": "^12.7.4",
+                "node-telegram-bot-api": "^0.67.0",
                 "papaparse": "^5.5.2",
                 "pdfjs-dist": "4.2.67",
                 "pg": "^8.20.0",
