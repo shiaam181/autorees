@@ -1,8 +1,8 @@
 import sql from "@/app/api/utils/sql";
-import { auth } from "@/auth";
+import { getSession } from "@/app/api/utils/get-session.js";
 
-export async function GET() {
-  const session = await auth();
+export async function GET(request) {
+  const session = await getSession(request);
   if (!session || !session.user?.id)
     return Response.json({ error: "Unauthorized" }, { status: 401 });
 
@@ -37,7 +37,7 @@ export async function GET() {
 }
 
 export async function PATCH(request) {
-  const session = await auth();
+  const session = await getSession(request);
   if (!session || !session.user?.id)
     return Response.json({ error: "Unauthorized" }, { status: 401 });
 

@@ -4,3 +4,16 @@
 # React Router
 /.react-router/
 /build/
+
+# Environment
+.env
+!.env.example
+
+# Debug files
+check-db.mjs
+check-meta.mjs
+check-tokens.mjs
+trigger-pipeline.mjs
+test-refresh.mjs
+debug-publish.mjs
+auth-error.log

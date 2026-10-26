@@ -1,9 +1,9 @@
 import sql from "@/app/api/utils/sql";
-import { auth } from "@/auth";
+import { getSession } from "@/app/api/utils/get-session.js";
 import { callGeminiWithRotation } from "@/app/api/utils/get-gemini-key";
 
 export async function POST(req, { params }) {
-  const session = await auth();
+  const session = await getSession(req);
   if (!session || !session.user?.id)
     return Response.json({ error: "Unauthorized" }, { status: 401 });
 

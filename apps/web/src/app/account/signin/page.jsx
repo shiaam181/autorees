@@ -6,6 +6,7 @@ function MainComponent() {
   const [loading, setLoading] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
 
   const { signInWithCredentials } = useAuth();
 
@@ -21,24 +22,34 @@ function MainComponent() {
     }
 
     try {
-      await signInWithCredentials({
+      const result = await signInWithCredentials({
         email,
         password,
         callbackUrl: "/",
-        redirect: true,
+        redirect: false,
       });
+
+      if (result?.url) {
+        window.location.href = result.url;
+        return;
+      }
+
+      if (!result || result.error) {
+        throw new Error(result?.error || "CredentialsSignin");
+      }
     } catch (err) {
+      const msg = err?.message || "";
       const errorMessages = {
         CredentialsSignin:
           "Incorrect email or password. Try again or reset your password.",
         AccessDenied: "You don’t have permission to sign in.",
         Configuration:
           "Sign-in isn’t working right now. Please try again later.",
+        UserNotFound: "No account was found for this email. Please sign up or try again.",
       };
 
-      setError(
-        errorMessages[err.message] || "Something went wrong. Please try again.",
-      );
+      setError(errorMessages[msg] || "Something went wrong. Please try again.");
+    } finally {
       setLoading(false);
     }
   };
@@ -83,15 +94,25 @@ function MainComponent() {
             <label className="block text-sm font-medium text-gray-400">
               Password
             </label>
-            <input
-              required
-              name="password"
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              placeholder="••••••••"
-              className="w-full rounded-lg bg-[#2a2a2a] border border-white/10 px-4 py-3 text-white outline-none focus:border-red-600/50 focus:ring-1 focus:ring-red-600/50"
-            />
+            <div className="relative">
+              <input
+                required
+                name="password"
+                type={showPassword ? "text" : "password"}
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder="••••••••"
+                className="w-full rounded-lg bg-[#2a2a2a] border border-white/10 px-4 py-3 pr-12 text-white outline-none focus:border-red-600/50 focus:ring-1 focus:ring-red-600/50"
+              />
+              <button
+                type="button"
+                aria-label={showPassword ? "Hide password" : "Show password"}
+                onClick={() => setShowPassword((s) => !s)}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-300 hover:text-white"
+              >
+                {showPassword ? "🙈" : "👁️"}
+              </button>
+            </div>
           </div>
 
           {error && (
@@ -115,6 +136,14 @@ function MainComponent() {
               className="text-red-500 hover:text-red-400 font-medium"
             >
               Create an account
+            </a>
+          </p>
+          <p className="text-center text-sm text-gray-400">
+            <a
+              href="/account/forgot-password"
+              className="text-red-500 hover:text-red-400 font-medium"
+            >
+              Forgot password?
             </a>
           </p>
         </div>

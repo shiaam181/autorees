@@ -1,9 +1,9 @@
-import { auth } from "@/auth";
+import { getSession } from "@/app/api/utils/get-session.js";
 import sql from "@/app/api/utils/sql";
 
 export async function GET(request) {
   try {
-    const session = await auth();
+    const session = await getSession(request);
     if (!session?.user?.id) {
       return new Response("Unauthorized", { status: 401 });
     }

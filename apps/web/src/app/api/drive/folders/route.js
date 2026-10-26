@@ -1,8 +1,8 @@
 import sql from "@/app/api/utils/sql";
-import { auth } from "@/auth";
+import { getSession } from "@/app/api/utils/get-session.js";
 
-export async function GET() {
-  const session = await auth();
+export async function GET(request) {
+  const session = await getSession(request);
   if (!session || !session.user?.id)
     return Response.json({ error: "Unauthorized" }, { status: 401 });
 
@@ -12,7 +12,7 @@ export async function GET() {
 }
 
 export async function POST(request) {
-  const session = await auth();
+  const session = await getSession(request);
   if (!session || !session.user?.id)
     return Response.json({ error: "Unauthorized" }, { status: 401 });
 
@@ -28,15 +28,12 @@ export async function POST(request) {
   const folderId = match[1];
 
   try {
-    // In a real app, you'd verify access here using Drive API
-    // For now, we'll just add it to the DB
     const [source] = await sql`
       INSERT INTO drive_sources (user_id, folder_id, folder_url, folder_name)
       VALUES (${session.user.id}, ${folderId}, ${folderUrl}, 'Detecting Name...')
       RETURNING *
     `;
 
-    // Initialize user settings if not exists
     await sql`
       INSERT INTO user_settings (user_id)
       VALUES (${session.user.id})
@@ -45,12 +42,13 @@ export async function POST(request) {
 
     return Response.json(source);
   } catch (err) {
+    console.error('[drive/folders POST]', err);
     return Response.json({ error: "Failed to add source" }, { status: 500 });
   }
 }
 
 export async function DELETE(request) {
-  const session = await auth();
+  const session = await getSession(request);
   if (!session || !session.user?.id)
     return Response.json({ error: "Unauthorized" }, { status: 401 });
 

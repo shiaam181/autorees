@@ -1,6 +1,7 @@
 import sql from "./sql.js";
 import { getGoogleAccessToken } from "./google-client.js";
 import { generateContentHash, findDuplicateVideo, logDuplicateSkip } from "./duplicate-detector.js";
+import { uploadToInstagram } from "./instagram-upload.js";
 
 let workerInterval = null;
 let isRunning = false;
@@ -258,7 +259,8 @@ Respond ONLY in JSON format (no markdown code blocks):
 
       const [settings] = await sql`SELECT review_required FROM user_settings WHERE user_id = ${video.user_id} LIMIT 1`;
       const reviewRequired = settings?.review_required ?? true;
-      const newStatus = (!reviewRequired && (result.confidence_score || 0) >= 0.7) ? "ready_for_review" : "pending_review";
+      // If review not required, always go to ready_for_review regardless of confidence
+      const newStatus = reviewRequired ? 'pending_review' : 'ready_for_review';
       
       await sql`UPDATE videos SET status = ${newStatus}, api_provider_used = ${provider} WHERE id = ${video.id}`;
 
@@ -347,20 +349,7 @@ async function publishReadyVideos(filterUserId, preSettings) {
 
       await sql`UPDATE videos SET status = 'uploading', retry_count = retry_count + 1 WHERE id = ${video.id}`;
 
-      const downloadResponse = await fetch(
-        `https://www.googleapis.com/drive/v3/files/${video.drive_file_id}?alt=media`,
-        { headers: { Authorization: `Bearer ${driveToken}` } }
-      );
-
-      if (!downloadResponse.ok) throw new Error(`Drive download failed: ${downloadResponse.status}`);
-
-      const videoBlob = await downloadResponse.blob();
-      const videoBuffer = await videoBlob.arrayBuffer();
-
-      const boundary = "-------314159265358979323846";
-      const delimiter = `\r\n--${boundary}\r\n`;
-      const closeDelimiter = `\r\n--${boundary}--`;
-
+      // Step 1: Start a resumable upload session on YouTube
       const metadata = {
         snippet: {
           title: video.meta_title,
@@ -371,26 +360,47 @@ async function publishReadyVideos(filterUserId, preSettings) {
         status: { privacyStatus: "public", selfDeclaredMadeForKids: false },
       };
 
-      const metadataPart = delimiter + "Content-Type: application/json; charset=UTF-8\r\n\r\n" + JSON.stringify(metadata);
-      const videoPart = delimiter + "Content-Type: " + video.mime_type + "\r\n\r\n";
-      const multipartRequestBody = new Blob([
-        new TextEncoder().encode(metadataPart),
-        new TextEncoder().encode(videoPart),
-        new Uint8Array(videoBuffer),
-        new TextEncoder().encode(closeDelimiter),
-      ]);
-
-      const uploadResponse = await fetch(
-        "https://www.googleapis.com/upload/youtube/v3/videos?uploadType=multipart&part=snippet,status",
+      const initResponse = await fetch(
+        "https://www.googleapis.com/upload/youtube/v3/videos?uploadType=resumable&part=snippet,status",
         {
           method: "POST",
           headers: {
             Authorization: `Bearer ${youtubeToken}`,
-            "Content-Type": `multipart/related; boundary=${boundary}`,
+            "Content-Type": "application/json",
+            "X-Upload-Content-Type": video.mime_type || "video/mp4",
           },
-          body: multipartRequestBody,
+          body: JSON.stringify(metadata),
         }
       );
+
+      if (!initResponse.ok) {
+        const err = await initResponse.text();
+        throw new Error(`YouTube resumable init failed: ${initResponse.status} - ${err}`);
+      }
+
+      const uploadUrl = initResponse.headers.get("location");
+      if (!uploadUrl) throw new Error("No upload URL from YouTube");
+
+      // Step 2: Download from Drive as a stream and pipe to YouTube
+      const downloadResponse = await fetch(
+        `https://www.googleapis.com/drive/v3/files/${video.drive_file_id}?alt=media`,
+        { headers: { Authorization: `Bearer ${driveToken}` } }
+      );
+
+      if (!downloadResponse.ok) throw new Error(`Drive download failed: ${downloadResponse.status}`);
+
+      const contentLength = downloadResponse.headers.get("content-length");
+
+      // Step 3: Stream directly to YouTube resumable upload
+      const uploadResponse = await fetch(uploadUrl, {
+        method: "PUT",
+        headers: {
+          "Content-Type": video.mime_type || "video/mp4",
+          ...(contentLength ? { "Content-Length": contentLength } : {}),
+        },
+        body: downloadResponse.body,
+        duplex: "half",
+      });
 
       if (!uploadResponse.ok) {
         const errorText = await uploadResponse.text();
@@ -412,6 +422,26 @@ async function publishReadyVideos(filterUserId, preSettings) {
       `;
 
       console.log(`[AutoWorker] Published "${video.filename}" → ${youtubeVideoUrl}`);
+
+      // Also post to Instagram Reels if connected
+      try {
+        const [igAccount] = await sql`SELECT id FROM connected_accounts WHERE user_id = ${video.user_id} AND provider = 'instagram' LIMIT 1`;
+        if (igAccount) {
+          const { reelUrl } = await uploadToInstagram(video.user_id, video, {
+            title: video.meta_title,
+            description: video.meta_description,
+            hashtags: video.meta_hashtags,
+          });
+          await sql`
+            INSERT INTO upload_logs (user_id, video_id, action, message, details)
+            VALUES (${video.user_id}, ${video.id}, 'instagram_success', 'Auto-published to Instagram Reels', ${JSON.stringify({ url: reelUrl })})
+          `;
+          console.log(`[AutoWorker] Also published to Instagram → ${reelUrl}`);
+        }
+      } catch (igErr) {
+        console.error(`[AutoWorker] Instagram publish failed for video ${video.id}:`, igErr.message);
+        // Don't fail the whole video — YouTube already succeeded
+      }
     } catch (err) {
       console.error(`[AutoWorker] Publish error for video ${video.id}:`, err.message);
       await sql`UPDATE videos SET status = 'failed', error_message = ${err.message} WHERE id = ${video.id}`;

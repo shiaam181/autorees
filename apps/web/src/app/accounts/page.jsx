@@ -8,10 +8,18 @@ import {
   RefreshCw,
   XCircle,
   LogIn,
+  Instagram,
 } from "lucide-react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import useUser from "@/utils/useUser";
+
+// Instagram icon (lucide doesn't have it, use inline SVG)
+const InstagramIcon = (props) => (
+  <svg viewBox="0 0 24 24" fill="currentColor" width={props.size || 24} height={props.size || 24} className={props.className}>
+    <path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zM12 0C8.741 0 8.333.014 7.053.072 2.695.272.273 2.69.073 7.052.014 8.333 0 8.741 0 12c0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98C8.333 23.986 8.741 24 12 24c3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98C15.668.014 15.259 0 12 0zm0 5.838a6.162 6.162 0 100 12.324 6.162 6.162 0 000-12.324zM12 16a4 4 0 110-8 4 4 0 010 8zm6.406-11.845a1.44 1.44 0 100 2.881 1.44 1.44 0 000-2.881z"/>
+  </svg>
+);
 
 const AccountCard = ({
   provider,
@@ -94,12 +102,13 @@ export default function AccountsPage() {
   } = useQuery({
     queryKey: ["connected-accounts"],
     queryFn: async () => {
-      const res = await fetch("/api/auth/google/status");
-      if (!res.ok) {
-        const errorData = await res.json();
-        throw new Error(errorData.error || "Failed to fetch account status");
-      }
-      return res.json();
+      const [googleRes, igRes] = await Promise.all([
+        fetch("/api/google/status"),
+        fetch("/api/instagram/status"),
+      ]);
+      const google = googleRes.ok ? await googleRes.json() : {};
+      const instagram = igRes.ok ? await igRes.json() : {};
+      return { ...google, instagram: instagram.connected, instagramUsername: instagram.username, instagramImage: instagram.image };
     },
     enabled: !!user,
     retry: false,
@@ -111,7 +120,7 @@ export default function AccountsPage() {
     const left = window.screenX + (window.outerWidth - width) / 2;
     const top = window.screenY + (window.outerHeight - height) / 2;
     const popup = window.open(
-      "/api/auth/google",
+      "/api/google",
       "google-oauth",
       `width=${width},height=${height},left=${left},top=${top},toolbar=no,menubar=no`
     );
@@ -119,7 +128,7 @@ export default function AccountsPage() {
       try {
         if (!popup || popup.closed) {
           clearInterval(checkPopup);
-          window.location.reload();
+          queryClient.invalidateQueries(["connected-accounts"]);
         }
       } catch (e) {
         // Cross-origin - popup still on Google's domain
@@ -127,10 +136,30 @@ export default function AccountsPage() {
     }, 500);
   };
 
+  const handleConnectInstagram = () => {
+    const width = 600;
+    const height = 700;
+    const left = window.screenX + (window.outerWidth - width) / 2;
+    const top = window.screenY + (window.outerHeight - height) / 2;
+    const popup = window.open(
+      "/api/instagram",
+      "instagram-oauth",
+      `width=${width},height=${height},left=${left},top=${top},toolbar=no,menubar=no`
+    );
+    const checkPopup = setInterval(() => {
+      try {
+        if (!popup || popup.closed) {
+          clearInterval(checkPopup);
+          queryClient.invalidateQueries(["connected-accounts"]);
+        }
+      } catch (e) {}
+    }, 500);
+  };
+
   const queryClient = useQueryClient();
   const disconnectMutation = useMutation({
     mutationFn: async (provider) => {
-      const res = await fetch("/api/auth/google/disconnect", {
+      const res = await fetch("/api/google/disconnect", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ provider }),
@@ -143,6 +172,19 @@ export default function AccountsPage() {
       queryClient.invalidateQueries(["connected-accounts"]);
     },
     onError: () => toast.error("Failed to disconnect"),
+  });
+
+  const disconnectInstagramMutation = useMutation({
+    mutationFn: async () => {
+      const res = await fetch("/api/instagram/disconnect", { method: "POST" });
+      if (!res.ok) throw new Error("Failed to disconnect Instagram");
+      return res.json();
+    },
+    onSuccess: () => {
+      toast.success("Instagram disconnected");
+      queryClient.invalidateQueries(["connected-accounts"]);
+    },
+    onError: () => toast.error("Failed to disconnect Instagram"),
   });
 
   // Show login prompt if not authenticated
@@ -239,6 +281,16 @@ export default function AccountsPage() {
             onConnect={handleConnect}
             onDisconnect={() => disconnectMutation.mutate("youtube")}
             isDisconnecting={disconnectMutation.isPending}
+          />
+          <AccountCard
+            provider="instagram"
+            label="Instagram"
+            scope="instagram_content_publish"
+            icon={InstagramIcon}
+            status={accounts?.instagram ? "connected" : "disconnected"}
+            onConnect={handleConnectInstagram}
+            onDisconnect={() => disconnectInstagramMutation.mutate()}
+            isDisconnecting={disconnectInstagramMutation.isPending}
           />
         </div>
       )}

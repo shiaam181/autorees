@@ -34,6 +34,16 @@ const PROVIDERS = [
     helpUrl: "https://platform.openai.com/api-keys",
     helpText: "Get key from OpenAI Platform",
   },
+  {
+    id: "custom",
+    name: "Custom / Open Source",
+    color: "text-purple-400",
+    bgColor: "bg-purple-500/10",
+    borderColor: "border-purple-500/20",
+    placeholder: "your-api-key...",
+    helpUrl: "#",
+    helpText: "Ollama, LM Studio, OpenRouter, etc.",
+  },
 ];
 
 const getProviderInfo = (id) => PROVIDERS.find((p) => p.id === id) || PROVIDERS[0];
@@ -44,6 +54,7 @@ export default function ApiKeysPage() {
   const [newKey, setNewKey] = useState("");
   const [newLabel, setNewLabel] = useState("");
   const [newProvider, setNewProvider] = useState("gemini");
+  const [newBaseUrl, setNewBaseUrl] = useState("");
   const [showAddForm, setShowAddForm] = useState(false);
 
   const { data: keys, isLoading } = useQuery({
@@ -59,11 +70,11 @@ export default function ApiKeysPage() {
   });
 
   const addMutation = useMutation({
-    mutationFn: async ({ api_key, label, provider }) => {
+    mutationFn: async ({ api_key, label, provider, base_url }) => {
       const res = await fetch("/api/api-keys", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ api_key, label, provider }),
+        body: JSON.stringify({ api_key, label, provider, base_url }),
       });
       if (!res.ok) {
         const err = await res.json();
@@ -72,9 +83,10 @@ export default function ApiKeysPage() {
       return res.json();
     },
     onSuccess: () => {
-      toast.success("API key added and verified!");
+      toast.success("API key added!");
       setNewKey("");
       setNewLabel("");
+      setNewBaseUrl("");
       setShowAddForm(false);
       queryClient.invalidateQueries(["api-keys"]);
     },
@@ -146,16 +158,13 @@ export default function ApiKeysPage() {
         <Sparkles size={20} className="text-blue-400 mt-0.5 shrink-0" />
         <div>
           <p className="text-sm text-gray-300">
-            <strong>How it works:</strong> Add API keys from <strong>Google Gemini</strong> or <strong>OpenAI (ChatGPT)</strong>.
-            When one key hits its rate limit, the system automatically switches to the next available key.
+            <strong>How it works:</strong> Add API keys from <strong>Google Gemini</strong>, <strong>OpenAI</strong>, or any <strong>custom/open-source</strong> model.
+            The AI uses your key to generate viral titles, descriptions, and hashtags for each video.
+            When one key hits its rate limit, the system automatically switches to the next.
           </p>
           <div className="flex gap-4 mt-3">
-            <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener noreferrer" className="text-xs text-blue-400 underline">
-              Get Gemini Key
-            </a>
-            <a href="https://platform.openai.com/api-keys" target="_blank" rel="noopener noreferrer" className="text-xs text-green-400 underline">
-              Get OpenAI Key
-            </a>
+            <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener noreferrer" className="text-xs text-blue-400 underline">Get Gemini Key</a>
+            <a href="https://platform.openai.com/api-keys" target="_blank" rel="noopener noreferrer" className="text-xs text-green-400 underline">Get OpenAI Key</a>
           </div>
         </div>
       </div>
@@ -166,22 +175,19 @@ export default function ApiKeysPage() {
             <Key size={18} className="text-red-500" /> Add New API Key
           </h3>
 
+          {/* Provider selection */}
           <div>
             <label className="text-sm font-bold text-gray-400 block mb-2">Provider</label>
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-3 gap-3">
               {PROVIDERS.map((p) => (
                 <button
                   key={p.id}
                   onClick={() => setNewProvider(p.id)}
                   className={`p-4 rounded-xl border-2 transition-all text-left ${
-                    newProvider === p.id
-                      ? `${p.borderColor} ${p.bgColor}`
-                      : "border-white/5 hover:border-white/10"
+                    newProvider === p.id ? `${p.borderColor} ${p.bgColor}` : "border-white/5 hover:border-white/10"
                   }`}
                 >
-                  <p className={`font-bold ${newProvider === p.id ? p.color : "text-white"}`}>
-                    {p.name}
-                  </p>
+                  <p className={`font-bold text-sm ${newProvider === p.id ? p.color : "text-white"}`}>{p.name}</p>
                   <p className="text-xs text-gray-500 mt-1">{p.helpText}</p>
                 </button>
               ))}
@@ -189,16 +195,38 @@ export default function ApiKeysPage() {
           </div>
 
           <div className="space-y-3">
+            {/* Label */}
             <div>
               <label className="text-sm font-bold text-gray-400 block mb-1">Label (optional)</label>
               <input
                 type="text"
-                placeholder="e.g. My Main Key, Backup Key"
+                placeholder="e.g. Main Key, Backup"
                 value={newLabel}
                 onChange={(e) => setNewLabel(e.target.value)}
                 className="w-full bg-[#2a2a2a] border border-white/10 rounded-xl p-3 text-white outline-none focus:border-red-600/50"
               />
             </div>
+
+            {/* Base URL — only for custom provider */}
+            {newProvider === "custom" && (
+              <div>
+                <label className="text-sm font-bold text-gray-400 block mb-1">
+                  Base URL <span className="text-red-400">*</span>
+                </label>
+                <input
+                  type="text"
+                  placeholder="http://localhost:11434  or  https://openrouter.ai/api"
+                  value={newBaseUrl}
+                  onChange={(e) => setNewBaseUrl(e.target.value)}
+                  className="w-full bg-[#2a2a2a] border border-purple-500/30 rounded-xl p-3 text-white outline-none focus:border-purple-500/60 font-mono text-sm"
+                />
+                <p className="text-xs text-gray-500 mt-1">
+                  The base URL of your OpenAI-compatible API server (Ollama, LM Studio, OpenRouter, Together AI, etc.)
+                </p>
+              </div>
+            )}
+
+            {/* API Key */}
             <div>
               <label className="text-sm font-bold text-gray-400 block mb-1">API Key</label>
               <input
@@ -208,27 +236,25 @@ export default function ApiKeysPage() {
                 onChange={(e) => setNewKey(e.target.value)}
                 className="w-full bg-[#2a2a2a] border border-white/10 rounded-xl p-3 text-white outline-none focus:border-red-600/50 font-mono"
               />
-              <a
-                href={providerInfo.helpUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className={`text-xs ${providerInfo.color} mt-1 inline-block underline`}
-              >
-                {providerInfo.helpText}
-              </a>
+              {providerInfo.helpUrl !== "#" && (
+                <a href={providerInfo.helpUrl} target="_blank" rel="noopener noreferrer" className={`text-xs ${providerInfo.color} mt-1 inline-block underline`}>
+                  {providerInfo.helpText}
+                </a>
+              )}
             </div>
           </div>
+
           <div className="flex gap-3 pt-2">
             <button
-              onClick={() => addMutation.mutate({ api_key: newKey, label: newLabel, provider: newProvider })}
-              disabled={!newKey.trim() || addMutation.isPending}
+              onClick={() => addMutation.mutate({ api_key: newKey, label: newLabel, provider: newProvider, base_url: newBaseUrl || null })}
+              disabled={!newKey.trim() || (newProvider === "custom" && !newBaseUrl.trim()) || addMutation.isPending}
               className="bg-red-600 text-white font-bold px-6 py-2.5 rounded-xl hover:bg-red-700 transition-all disabled:opacity-50 flex items-center gap-2"
             >
-              {addMutation.isPending ? "Verifying..." : "Add & Verify Key"}
+              {addMutation.isPending ? "Saving..." : "Add Key"}
               <Shield size={16} />
             </button>
             <button
-              onClick={() => { setShowAddForm(false); setNewKey(""); setNewLabel(""); }}
+              onClick={() => { setShowAddForm(false); setNewKey(""); setNewLabel(""); setNewBaseUrl(""); }}
               className="text-gray-400 px-4 py-2.5 rounded-xl hover:bg-white/5 transition-all"
             >
               Cancel
@@ -248,27 +274,18 @@ export default function ApiKeysPage() {
           {keys.map((key) => {
             const pi = getProviderInfo(key.provider);
             return (
-              <div
-                key={key.id}
-                className={`bg-[#1a1a1a] p-5 rounded-2xl border transition-all flex items-center gap-4 ${
-                  key.is_active ? "border-white/5" : "border-white/5 opacity-50"
-                }`}
-              >
+              <div key={key.id} className={`bg-[#1a1a1a] p-5 rounded-2xl border transition-all flex items-center gap-4 ${key.is_active ? "border-white/5" : "border-white/5 opacity-50"}`}>
                 <div className={`p-3 rounded-xl ${key.is_active ? pi.bgColor : "bg-gray-500/10"}`}>
                   <Key size={20} className={key.is_active ? pi.color : "text-gray-500"} />
                 </div>
-
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 flex-wrap">
                     <p className="font-bold">{key.label || `${pi.name} Key`}</p>
-                    <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${pi.bgColor} ${pi.color}`}>
-                      {pi.name}
-                    </span>
-                    {key.is_active ? (
-                      <span className="text-xs bg-green-500/10 text-green-500 px-2 py-0.5 rounded-full">Active</span>
-                    ) : (
-                      <span className="text-xs bg-gray-500/10 text-gray-400 px-2 py-0.5 rounded-full">Disabled</span>
-                    )}
+                    <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${pi.bgColor} ${pi.color}`}>{pi.name}</span>
+                    {key.is_active
+                      ? <span className="text-xs bg-green-500/10 text-green-500 px-2 py-0.5 rounded-full">Active</span>
+                      : <span className="text-xs bg-gray-500/10 text-gray-400 px-2 py-0.5 rounded-full">Disabled</span>
+                    }
                     {key.error_count > 0 && (
                       <span className="text-xs bg-yellow-500/10 text-yellow-500 px-2 py-0.5 rounded-full flex items-center gap-1">
                         <AlertTriangle size={10} /> {key.error_count} errors
@@ -276,32 +293,14 @@ export default function ApiKeysPage() {
                     )}
                   </div>
                   <p className="text-xs text-gray-500 font-mono mt-1">{key.masked_key}</p>
-                  {key.last_used_at && (
-                    <p className="text-xs text-gray-600 mt-0.5">
-                      Last used: {new Date(key.last_used_at).toLocaleString()}
-                    </p>
-                  )}
+                  {key.base_url && <p className="text-xs text-purple-400 mt-0.5 font-mono">{key.base_url}</p>}
+                  {key.last_used_at && <p className="text-xs text-gray-600 mt-0.5">Last used: {new Date(key.last_used_at).toLocaleString()}</p>}
                 </div>
-
                 <div className="flex items-center gap-2">
-                  <button
-                    onClick={() => toggleMutation.mutate({ id: key.id, is_active: !key.is_active })}
-                    className="p-2 hover:bg-white/5 rounded-xl transition-all"
-                    title={key.is_active ? "Disable" : "Enable"}
-                  >
-                    {key.is_active ? (
-                      <ToggleRight size={24} className="text-green-500" />
-                    ) : (
-                      <ToggleLeft size={24} className="text-gray-500" />
-                    )}
+                  <button onClick={() => toggleMutation.mutate({ id: key.id, is_active: !key.is_active })} className="p-2 hover:bg-white/5 rounded-xl transition-all" title={key.is_active ? "Disable" : "Enable"}>
+                    {key.is_active ? <ToggleRight size={24} className="text-green-500" /> : <ToggleLeft size={24} className="text-gray-500" />}
                   </button>
-                  <button
-                    onClick={() => {
-                      if (confirm("Remove this API key?")) deleteMutation.mutate(key.id);
-                    }}
-                    className="p-2 hover:bg-red-500/10 rounded-xl transition-all text-gray-500 hover:text-red-500"
-                    title="Delete"
-                  >
+                  <button onClick={() => { if (confirm("Remove this API key?")) deleteMutation.mutate(key.id); }} className="p-2 hover:bg-red-500/10 rounded-xl transition-all text-gray-500 hover:text-red-500" title="Delete">
                     <Trash2 size={18} />
                   </button>
                 </div>
@@ -313,13 +312,8 @@ export default function ApiKeysPage() {
         <div className="bg-[#1a1a1a] py-16 rounded-3xl border border-dashed border-white/10 text-center">
           <Key size={40} className="text-gray-700 mx-auto mb-4" />
           <h3 className="text-xl font-bold mb-2">No API Keys Added</h3>
-          <p className="text-gray-400 max-w-sm mx-auto mb-6">
-            Add a Gemini or OpenAI API key to enable AI metadata generation.
-          </p>
-          <button
-            onClick={() => setShowAddForm(true)}
-            className="bg-red-600 text-white font-bold px-6 py-3 rounded-xl hover:bg-red-700 transition-all inline-flex items-center gap-2"
-          >
+          <p className="text-gray-400 max-w-sm mx-auto mb-6">Add an AI API key to enable automatic title, description, and hashtag generation.</p>
+          <button onClick={() => setShowAddForm(true)} className="bg-red-600 text-white font-bold px-6 py-3 rounded-xl hover:bg-red-700 transition-all inline-flex items-center gap-2">
             <Plus size={18} /> Add Your First Key
           </button>
         </div>

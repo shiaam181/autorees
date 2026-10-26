@@ -35,24 +35,17 @@ async function tryGeminiKey(key, prompt) {
 
       if (res.ok) {
         if (key.id) await markKeyUsed(key.id);
-        console.log(`[AI] Gemini success with key ${key.id || 'env'} on ${model}`);
         const data = await res.json();
         return data.candidates?.[0]?.content?.parts?.[0]?.text || "";
       }
 
       const errText = await res.text();
-
-      if (res.status === 429) {
-        console.log(`[AI] Gemini key ${key.id || 'env'} rate limited on ${model}`);
-        await new Promise(r => setTimeout(r, 2000));
-        continue;
-      }
+      if (res.status === 429) { await new Promise(r => setTimeout(r, 2000)); continue; }
       if (res.status === 400 && errText.includes("API_KEY_INVALID")) {
         if (key.id) await sql`UPDATE api_keys SET is_active = false WHERE id = ${key.id}`;
         return null;
       }
       if (res.status === 404) continue;
-      console.error(`[AI] Gemini error (${res.status}) on ${model}:`, errText.substring(0, 200));
     } catch (err) {
       console.error(`[AI] Gemini network error:`, err.message);
     }
@@ -82,24 +75,17 @@ async function tryOpenAIKey(key, prompt) {
 
       if (res.ok) {
         if (key.id) await markKeyUsed(key.id);
-        console.log(`[AI] OpenAI success with key ${key.id} on ${model}`);
         const data = await res.json();
         return data.choices?.[0]?.message?.content || "";
       }
 
       const errText = await res.text();
-
-      if (res.status === 429) {
-        console.log(`[AI] OpenAI key ${key.id} rate limited on ${model}`);
-        await new Promise(r => setTimeout(r, 2000));
-        continue;
-      }
+      if (res.status === 429) { await new Promise(r => setTimeout(r, 2000)); continue; }
       if (res.status === 401) {
         if (key.id) await sql`UPDATE api_keys SET is_active = false WHERE id = ${key.id}`;
         return null;
       }
       if (res.status === 404) continue;
-      console.error(`[AI] OpenAI error (${res.status}) on ${model}:`, errText.substring(0, 200));
     } catch (err) {
       console.error(`[AI] OpenAI network error:`, err.message);
     }
@@ -109,18 +95,96 @@ async function tryOpenAIKey(key, prompt) {
   return null;
 }
 
+/**
+ * Tries a custom / open-source API key.
+ * Most open-source LLM servers (Ollama, LM Studio, OpenRouter, Together AI, etc.)
+ * are OpenAI-compatible — they accept POST /v1/chat/completions with Bearer auth.
+ * The base_url field on the key tells us where the server is.
+ */
+async function tryCustomKey(key, prompt) {
+  const baseUrl = (key.base_url || "").replace(/\/$/, "");
+  if (!baseUrl) {
+    console.error(`[AI] Custom key ${key.id} has no base_url configured`);
+    if (key.id) await markKeyError(key.id);
+    return null;
+  }
+
+  // FreeLLMAPI and OpenRouter use "auto" — try it first, then fallbacks
+  const models = [
+    "auto",
+    "auto:fast",
+    key.model_name || null,
+    "llama3",
+    "mistral",
+    "gemma2",
+  ].filter(Boolean);
+
+  // Support both base URLs with and without /v1
+  const endpoint = baseUrl.endsWith('/v1')
+    ? `${baseUrl}/chat/completions`
+    : `${baseUrl}/v1/chat/completions`;
+
+  for (const model of models) {
+    try {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 120000); // 2 min timeout
+      const res = await fetch(endpoint, {
+        signal: controller.signal,
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${key.api_key}`,
+        },
+        body: JSON.stringify({
+          model,
+          messages: [{ role: "user", content: prompt }],
+          temperature: 0.7,
+        }),
+      });
+      clearTimeout(timeoutId);
+
+      if (res.ok) {
+        if (key.id) await markKeyUsed(key.id);
+        const data = await res.json();
+        const text = data.choices?.[0]?.message?.content || data.response || "";
+        if (text) {
+          console.log(`[AI] Custom key success with model "${model}" at ${baseUrl}`);
+          return text;
+        }
+      }
+
+      if (res.status === 429) { await new Promise(r => setTimeout(r, 2000)); continue; }
+      if (res.status === 401 || res.status === 403) {
+        console.error(`[AI] Custom key auth failed at ${baseUrl}`);
+        break;
+      }
+    } catch (err) {
+      if (err.name === 'AbortError') {
+        console.error(`[AI] Custom API timed out at ${baseUrl} with model "${model}"`);
+        continue; // try next model
+      }
+      console.error(`[AI] Custom API unreachable at ${baseUrl}:`, err.message);
+      break;
+    }
+  }
+
+  if (key.id) await markKeyError(key.id);
+  return null;
+}
+
 export async function callGeminiWithRotation(userId, prompt) {
   const allKeys = await sql`
-    SELECT id, api_key, provider FROM api_keys
+    SELECT id, api_key, provider, base_url FROM api_keys
     WHERE user_id = ${userId} AND is_active = true
     ORDER BY error_count ASC, last_used_at ASC NULLS FIRST
   `;
 
+  // Fallback env key (Gemini)
   const envKey = process.env.GEMINI_API_KEY;
   if (envKey) allKeys.push({ id: null, api_key: envKey, provider: "gemini" });
 
   if (allKeys.length === 0) {
-    throw new Error("No API keys configured. Add a Gemini or OpenAI key on the API Keys page.");
+    throw new Error("No API keys configured. Add a key on the API Keys page.");
   }
 
   for (const key of allKeys) {
@@ -128,6 +192,8 @@ export async function callGeminiWithRotation(userId, prompt) {
 
     if (key.provider === "openai") {
       result = await tryOpenAIKey(key, prompt);
+    } else if (key.provider === "custom") {
+      result = await tryCustomKey(key, prompt);
     } else {
       result = await tryGeminiKey(key, prompt);
     }
@@ -140,5 +206,5 @@ export async function callGeminiWithRotation(userId, prompt) {
     }
   }
 
-  throw new Error("All API keys exhausted or rate limited. Add more keys on the API Keys page or wait for limits to reset.");
+  throw new Error("All API keys exhausted or rate limited. Add more keys or wait for limits to reset.");
 }

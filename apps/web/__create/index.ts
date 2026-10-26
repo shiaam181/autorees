@@ -11,12 +11,16 @@ import { cors } from 'hono/cors';
 import { proxy } from 'hono/proxy';
 import { bodyLimit } from 'hono/body-limit';
 import { requestId } from 'hono/request-id';
-import { createHonoServer } from 'react-router-hono-server/bun';
+import { createHonoServer } from 'react-router-hono-server/node';
 import { serializeError } from 'serialize-error';
 import NeonAdapter from './adapter';
 import { getHTMLForErrorPage } from './get-html-for-error-page';
 import { isAuthAction } from './is-auth-action';
 import { API_BASENAME, api } from './route-builder';
+import { POST as forgotPasswordHandler } from '../src/app/api/auth/forgot-password/route.js';
+import { POST as resetPasswordHandler } from '../src/app/api/auth/reset-password/route.js';
+import { POST as credentialsSignInHandler } from '../src/app/api/auth/callback/credentials-signin/route.js';
+import { POST as credentialsSignUpHandler } from '../src/app/api/auth/callback/credentials-signup/route.js';
 
 const als = new AsyncLocalStorage<{ requestId: string }>();
 
@@ -125,8 +129,6 @@ if (process.env.AUTH_SECRET) {
         },
       },
       providers: [
-        // Dev-only provider for simulated social sign-in (Google, Facebook, etc.)
-        // Creates or finds a user by email without requiring a password.
         ...(process.env.NEXT_PUBLIC_CREATE_ENV === 'DEVELOPMENT'
           ? [
               Credentials({
@@ -190,7 +192,6 @@ if (process.env.AUTH_SECRET) {
               return null;
             }
 
-            // logic to verify if user exists
             const user = await adapter!.getUserByEmail(email);
             if (!user) {
               return null;
@@ -208,7 +209,6 @@ if (process.env.AUTH_SECRET) {
               return null;
             }
 
-            // return user object with the their profile data
             return user;
           },
         }),
@@ -237,7 +237,6 @@ if (process.env.AUTH_SECRET) {
                 return null;
               }
 
-              // logic to verify if user exists
               const user = await adapter!.getUserByEmail(email);
               if (!user) {
                 const newUser = await adapter!.createUser({
@@ -276,8 +275,6 @@ app.all('/integrations/:path{.+}', async (c, next) => {
   return proxy(url, {
     method: c.req.method,
     body: c.req.raw.body ?? null,
-    // @ts-expect-error -- duplex is accepted by the runtime even though the
-    // type declarations don't include it; required for streaming integrations
     duplex: 'half',
     redirect: 'manual',
     headers: {
@@ -288,6 +285,83 @@ app.all('/integrations/:path{.+}', async (c, next) => {
       'x-createxyz-project-group-id': process.env.NEXT_PUBLIC_PROJECT_GROUP_ID,
     },
   });
+});
+
+app.get('/api/auth/csrf', (c) => {
+  return c.json({ csrfToken: crypto.randomUUID() });
+});
+
+app.post('/api/auth/forgot-password', async (c) => {
+  const body = await c.req.json().catch(() => ({}));
+  const req = new Request(new URL(c.req.url), {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify(body),
+  });
+  return forgotPasswordHandler(req);
+});
+
+app.post('/api/auth/reset-password', async (c) => {
+  const body = await c.req.json().catch(() => ({}));
+  const req = new Request(new URL(c.req.url), {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify(body),
+  });
+  return resetPasswordHandler(req);
+});
+
+app.post('/api/auth/callback/credentials-signin', async (c) => {
+  const form = await c.req.formData();
+  const params = new URLSearchParams();
+  for (const [key, value] of form.entries()) {
+    params.append(key, String(value));
+  }
+  const req = new Request(new URL(c.req.url), {
+    method: 'POST',
+    headers: { 'content-type': 'application/x-www-form-urlencoded' },
+    body: params,
+  });
+  return credentialsSignInHandler(req);
+});
+
+app.post('/api/auth/callback/credentials-signup', async (c) => {
+  const form = await c.req.formData();
+  const params = new URLSearchParams();
+  for (const [key, value] of form.entries()) {
+    params.append(key, String(value));
+  }
+  const req = new Request(new URL(c.req.url), {
+    method: 'POST',
+    headers: { 'content-type': 'application/x-www-form-urlencoded' },
+    body: params,
+  });
+  return credentialsSignUpHandler(req);
+});
+
+app.use('/api/auth/*', async (c, next) => {
+  const pathname = c.req.path ?? '';
+  const skipPaths = [
+    '/api/auth/csrf',
+    '/api/auth/forgot-password',
+    '/api/auth/reset-password',
+    '/api/auth/callback/credentials-signin',
+    '/api/auth/callback/credentials-signup',
+  ];
+
+  if (skipPaths.includes(pathname)) {
+    return next();
+  }
+
+  if (pathname.startsWith('/api/auth/callback/')) {
+    return next();
+  }
+
+  if (pathname === '/api/auth' || pathname.startsWith('/api/auth/')) {
+    return authHandler()(c, next);
+  }
+
+  return next();
 });
 
 app.use('/api/auth/*', async (c, next) => {
