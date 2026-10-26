@@ -11,10 +11,12 @@ import {
   BarChart3,
   Play,
   ExternalLink,
+  RefreshCw,
 } from "lucide-react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { StatusBadge } from "@/components/StatusBadge";
 import useUser from "@/utils/useUser";
+import { toast } from "sonner";
 
 const STATUS_ORDER = ["uploading", "analyzing", "detected", "ready_for_review", "pending_review", "scheduled", "published", "failed"];
 
@@ -78,6 +80,7 @@ const StepIndicator = ({ status }) => {
 
 export default function PipelinePage() {
   const { data: user, loading: userLoading } = useUser();
+  const queryClient = useQueryClient();
 
   const { data, isLoading } = useQuery({
     queryKey: ["pipeline"],
@@ -90,6 +93,40 @@ export default function PipelinePage() {
     enabled: !!user,
     refetchInterval: 10000,
     retry: false,
+  });
+
+  // Retry single video
+  const retryMutation = useMutation({
+    mutationFn: async (id) => {
+      const res = await fetch(`/api/videos/retry/${id}`, { method: "POST" });
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.error || "Retry failed");
+      }
+      return res.json();
+    },
+    onSuccess: () => {
+      toast.success("Video queued for retry");
+      queryClient.invalidateQueries(["pipeline"]);
+    },
+    onError: (err) => toast.error(err.message),
+  });
+
+  // Retry ALL failed videos
+  const retryAllMutation = useMutation({
+    mutationFn: async () => {
+      const failedVideos = (data?.videos || []).filter(v => v.status === "failed");
+      const results = await Promise.allSettled(
+        failedVideos.map(v => fetch(`/api/videos/retry/${v.id}`, { method: "POST" }))
+      );
+      const succeeded = results.filter(r => r.status === "fulfilled").length;
+      return { succeeded, total: failedVideos.length };
+    },
+    onSuccess: ({ succeeded, total }) => {
+      toast.success(`Retrying ${succeeded}/${total} failed videos`);
+      queryClient.invalidateQueries(["pipeline"]);
+    },
+    onError: () => toast.error("Failed to retry videos"),
   });
 
   if (userLoading || !user) {
@@ -123,9 +160,21 @@ export default function PipelinePage() {
 
   return (
     <div className="space-y-8 animate-in fade-in duration-500">
-      <div>
-        <h1 className="text-3xl font-bold">Upload Pipeline</h1>
-        <p className="text-gray-400 mt-1">Track today's videos from scan to YouTube.</p>
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-3xl font-bold">Upload Pipeline</h1>
+          <p className="text-gray-400 mt-1">Track today's videos from scan to YouTube.</p>
+        </div>
+        {failed > 0 && (
+          <button
+            onClick={() => retryAllMutation.mutate()}
+            disabled={retryAllMutation.isPending}
+            className="flex items-center gap-2 bg-red-600 hover:bg-red-700 text-white font-bold px-5 py-2.5 rounded-xl transition-all disabled:opacity-50"
+          >
+            <RefreshCw size={16} className={retryAllMutation.isPending ? "animate-spin" : ""} />
+            Retry All Failed ({failed})
+          </button>
+        )}
       </div>
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
