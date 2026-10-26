@@ -291,6 +291,17 @@ export default function PipelinePage() {
                   <StepIndicator status={video.status} />
                 </div>
 
+                {video.status === "failed" && (
+                  <button
+                    onClick={() => retryMutation.mutate(video.id)}
+                    disabled={retryMutation.isPending}
+                    className="shrink-0 p-2 bg-red-500/10 text-red-400 hover:bg-red-500/20 rounded-xl transition-all"
+                    title="Retry this video"
+                  >
+                    <RefreshCw size={16} className={retryMutation.isPending ? "animate-spin" : ""} />
+                  </button>
+                )}
+
                 {video.status === "published" && video.youtube_video_url && (
                   <a
                     href={video.youtube_video_url}
